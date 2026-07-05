@@ -92,6 +92,7 @@ input:focus {
   align-items: center;
   display: inline-flex;
   min-width: 0;
+  text-decoration: none;
 }
 
 .brand-lockup {
@@ -110,6 +111,19 @@ input:focus {
   max-width: min(28vw, 170px);
   object-fit: contain;
   width: auto;
+}
+
+.brand-text {
+  color: #f8fbff;
+  display: block;
+  font-size: var(--brand-text-size);
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 1;
+  text-shadow:
+    0 0 16px rgba(255, 45, 85, 0.24),
+    0 0 24px rgba(255, 211, 90, 0.18);
+  white-space: nowrap;
 }
 
 .brand-divider {
@@ -668,6 +682,7 @@ body.public-page {
 
 .public-page .topbar {
   --brand-logo-height: clamp(32px, 7vw, 50px);
+  --brand-text-size: clamp(24px, 7vw, 44px);
   --event-title-size: clamp(11px, 2.2vw, 16px);
   align-items: center;
   background:

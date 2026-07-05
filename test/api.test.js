@@ -66,7 +66,7 @@ test("public mode does not expose admin login page or admin APIs", async (t) => 
   assert.equal(adminApi.status, 404);
 });
 
-test("site pages expose the Jump Quantum favicon in public and admin modes", async (t) => {
+test("site pages expose the favicon in public and admin modes", async (t) => {
   const publicServer = startTestServer({ mode: "public" });
   t.after(publicServer.close);
   const adminServer = startTestServer({ mode: "admin" });
@@ -105,7 +105,10 @@ test("public H5 page defaults to Spanish and ships nine fallback prize categorie
   assert.doesNotMatch(page.body, /[\u3400-\u9fff]/);
   assert.doesNotMatch(page.body, /topbar-cta/);
   assert.doesNotMatch(page.body, /CryptoReward/);
-  assert.match(page.body, /<img class="brand-logo-image" src="\/assets\/jump-quantum-banner\.png" alt="JUMP QUTARIS" \/>/);
+  assert.match(page.body, /Evento de Recompensas para Inversionistas \| STIFEL/);
+  assert.match(page.body, /<span class="brand-text">STIFEL<\/span>/);
+  assert.doesNotMatch(page.body, /JUMP QUTARIS/);
+  assert.doesNotMatch(page.body, /jump-quantum-banner\.png/);
   assert.match(page.body, /EVENTO DE RECOMPENSAS/);
   assert.match(page.body, /<p class="event-title" aria-label="EVENTO DE RECOMPENSAS">EVENTO DE RECOMPENSAS<\/p>/);
   assert.doesNotMatch(page.body, /brand-jump/);
@@ -118,14 +121,7 @@ test("public H5 page defaults to Spanish and ships nine fallback prize categorie
   assert.match(page.body, /aprecio, colaboración y crecimiento a largo plazo/);
   assert.ok(page.body.indexOf('id="resultPanel"') < page.body.indexOf('class="vision-panel"'));
   assert.match(page.body, /brand-divider/);
-  assert.match(page.body, /\/assets\/jump-quantum-banner\.png/);
-
-  const logo = await server.request("/assets/jump-quantum-banner.png", { raw: true });
-  assert.equal(logo.status, 200);
-  assert.match(logo.headers.get("content-type") ?? "", /image\/png/);
-  const logoMeta = await sharp(logo.body).metadata();
-  assert.equal(logoMeta.width, 600);
-  assert.equal(logoMeta.height, 294);
+  assert.match(page.body, /En STIFEL,/);
 
   const script = await server.request("/app.js", {
     headers: { accept: "text/javascript" }
@@ -175,15 +171,15 @@ test("public H5 page defaults to Spanish and ships nine fallback prize categorie
   assert.doesNotMatch(styles.body, /\.wheel\.is-crowded \.wheel-label img/);
   assert.match(styles.body, /\.public-page \.topbar\s*{[^}]*position:\s*fixed/s);
   assert.match(styles.body, /\.brand-lockup\s*{[^}]*grid-template-columns:\s*auto auto minmax\(0,\s*auto\)/s);
-  assert.match(styles.body, /\.brand-logo-image\s*{[^}]*height:\s*var\(--brand-logo-height\)/s);
-  assert.match(styles.body, /\.brand-logo-image\s*{[^}]*object-fit:\s*contain/s);
+  assert.match(styles.body, /\.brand-text\s*{[^}]*font-size:\s*var\(--brand-text-size\)/s);
+  assert.match(styles.body, /\.brand-text\s*{[^}]*white-space:\s*nowrap/s);
   assert.match(styles.body, /\.event-title\s*{[^}]*text-align:\s*left/s);
   assert.match(styles.body, /\.event-title\s*{[^}]*white-space:\s*nowrap/s);
   assert.doesNotMatch(styles.body, /\.brand-jump\s*{/);
   assert.doesNotMatch(styles.body, /\.brand-quantum\s*{/);
   assert.match(styles.body, /body\.public-page\s*{[^}]*--topbar-offset:\s*clamp\(64px,\s*13vw,\s*86px\)/s);
   assert.match(styles.body, /body\.public-page\s*{[^}]*padding-top:\s*var\(--topbar-offset\)/s);
-  assert.match(styles.body, /--brand-logo-height:\s*clamp\(32px,\s*7vw,\s*50px\)/);
+  assert.match(styles.body, /--brand-text-size:\s*clamp\(24px,\s*7vw,\s*44px\)/);
   assert.match(styles.body, /--event-title-size:\s*clamp\(11px,\s*2\.2vw,\s*16px\)/);
   assert.doesNotMatch(styles.body, /\.brand-name\s*{/);
   assert.match(styles.body, /\.brand-divider\s*{[^}]*linear-gradient\(90deg,\s*#ff2d55,\s*#ffd35a\)/s);
@@ -228,8 +224,10 @@ test("public page keeps the code entry flow and removes the unused reward intro"
   assert.match(page.body, /<form id="codeForm" class="code-form" novalidate>/);
   const codeFormHtml = page.body.slice(page.body.indexOf('<form id="codeForm"'), page.body.indexOf("</form>"));
   assert.doesNotMatch(codeFormHtml, /\srequired\b/);
-  assert.match(page.body, /brand-logo-image/);
-  assert.match(page.body, /\/assets\/jump-quantum-banner\.png/);
+  assert.match(page.body, /brand-text/);
+  assert.match(page.body, /STIFEL/);
+  assert.doesNotMatch(page.body, /JUMP QUTARIS/);
+  assert.doesNotMatch(page.body, /jump-quantum-banner\.png/);
   assert.match(page.body, /EVENTO DE RECOMPENSAS/);
   assert.match(page.body, /brand-divider/);
   assert.match(page.body, /Ingresa tu código/);

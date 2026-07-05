@@ -76,6 +76,7 @@ test("site pages expose the favicon in public and admin modes", async (t) => {
     headers: { accept: "text/html" }
   });
   assert.equal(publicPage.status, 200);
+  assert.match(publicPage.body, /<title>STIFEL<\/title>/);
   assert.match(publicPage.body, /<link rel="icon" type="image\/png" href="\/favicon\.png" \/>/);
   assert.match(publicPage.body, /<link rel="apple-touch-icon" href="\/apple-touch-icon\.png" \/>/);
 
@@ -88,6 +89,17 @@ test("site pages expose the favicon in public and admin modes", async (t) => {
 
   const publicIcon = await publicServer.request("/favicon.png");
   assert.equal(publicIcon.status, 200);
+  assert.match(publicIcon.headers.get("content-type") ?? "", /image\/png/);
+  const publicIconMeta = await sharp(publicIcon.body).metadata();
+  assert.equal(publicIconMeta.width, 512);
+  assert.equal(publicIconMeta.height, 512);
+
+  const publicIcon32 = await publicServer.request("/favicon-32.png", { raw: true });
+  assert.equal(publicIcon32.status, 200);
+  const publicIcon32Meta = await sharp(publicIcon32.body).metadata();
+  assert.equal(publicIcon32Meta.width, 32);
+  assert.equal(publicIcon32Meta.height, 32);
+
   const adminIcon = await adminServer.request("/favicon.png");
   assert.equal(adminIcon.status, 200);
 });
@@ -105,7 +117,7 @@ test("public H5 page defaults to Spanish and ships nine fallback prize categorie
   assert.doesNotMatch(page.body, /[\u3400-\u9fff]/);
   assert.doesNotMatch(page.body, /topbar-cta/);
   assert.doesNotMatch(page.body, /CryptoReward/);
-  assert.match(page.body, /Evento de Recompensas para Inversionistas \| STIFEL/);
+  assert.match(page.body, /<title>STIFEL<\/title>/);
   assert.match(page.body, /<span class="brand-text">STIFEL<\/span>/);
   assert.doesNotMatch(page.body, /JUMP QUTARIS/);
   assert.doesNotMatch(page.body, /jump-quantum-banner\.png/);

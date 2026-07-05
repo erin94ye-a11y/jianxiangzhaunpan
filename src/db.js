@@ -313,7 +313,7 @@ export function performDraw(db, code, requestMeta) {
     try {
       selectedPrize = pickPrize(campaign.prizes);
     } catch {
-      const error = new Error("Prize inventory is sold out. Please contact the campaign administrator.");
+      const error = new Error("El inventario de premios está agotado. Contacta al administrador de la campaña.");
       error.statusCode = 400;
       throw error;
     }
@@ -354,25 +354,25 @@ export function performDraw(db, code, requestMeta) {
 
 export function validateDrawableCampaign(campaign) {
   if (!campaign) {
-    const error = new Error("Lottery code not found.");
+    const error = new Error("Código de sorteo no encontrado.");
     error.statusCode = 404;
     throw error;
   }
 
   if (!campaign.active) {
-    const error = new Error("This lottery code is not active yet.");
+    const error = new Error("Este código de sorteo aún no está activo.");
     error.statusCode = 400;
     throw error;
   }
 
   if (campaign.expires_at && new Date(campaign.expires_at).getTime() < Date.now()) {
-    const error = new Error("This lottery code has expired.");
+    const error = new Error("Este código de sorteo ha vencido.");
     error.statusCode = 400;
     throw error;
   }
 
   if (campaign.used_count >= campaign.max_uses) {
-    const error = new Error("This lottery code has no spins left.");
+    const error = new Error("Este código de sorteo ya no tiene giros disponibles.");
     error.statusCode = 400;
     throw error;
   }

@@ -37,24 +37,24 @@ codeForm.addEventListener("submit", async (event) => {
   if (!code) {
     codeInput.setAttribute("aria-invalid", "true");
     codeInput.focus();
-    setMessage("Please enter your code.", "error");
+    setMessage("Ingresa tu código.", "error");
     return;
   }
 
   codeInput.removeAttribute("aria-invalid");
-  setMessage("Checking your code...", "");
+  setMessage("Verificando tu código...", "");
 
   try {
     await reportVisitor({ code });
     const response = await fetch(`/api/public/campaigns/${encodeURIComponent(code)}`);
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || "This code is not available.");
+      throw new Error(data.error || "Este código no está disponible.");
     }
 
     activeCampaign = data.campaign;
     renderCampaign(activeCampaign);
-    setMessage("Code verified. Your spin is ready.", "success");
+    setMessage("Código verificado. Tu giro está listo.", "success");
   } catch (error) {
     setMessage(error.message, "error");
   }
@@ -68,7 +68,7 @@ spinButton.addEventListener("click", async () => {
   isSpinning = true;
   spinButton.disabled = true;
   resultPanel.classList.add("is-hidden");
-  setMessage("Spinning...", "");
+  setMessage("Girando...", "");
 
   try {
     const response = await fetch("/api/public/draw", {
@@ -81,7 +81,7 @@ spinButton.addEventListener("click", async () => {
     });
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || "Unable to complete the draw. Please try again.");
+      throw new Error(data.error || "No se pudo completar el sorteo. Inténtalo de nuevo.");
     }
     if (data.visitor_token) {
       storeVisitorToken(data.visitor_token);
@@ -261,25 +261,25 @@ async function loadPrizePool() {
 
 function renderStaticPrizePool(prizes) {
   activeCampaign = null;
-  campaignTitle.textContent = "Prize Wheel";
+  campaignTitle.textContent = "Ruleta de premios";
   welcomeStage.classList.add("is-hidden");
   wheelStage.classList.remove("is-hidden");
   spinButton.disabled = true;
-  spinButton.textContent = "Enter Code";
+  spinButton.textContent = "Ingresa código";
   renderWheel(prizes);
 }
 
 function renderCampaign(campaign) {
   activeCampaign = campaign;
   const remaining = Math.max(0, campaign.max_uses - campaign.used_count);
-  campaignTitle.textContent = "Prize Wheel";
+  campaignTitle.textContent = "Ruleta de premios";
   welcomeStage.classList.add("is-hidden");
   wheelStage.classList.remove("is-hidden");
   spinButton.disabled = remaining <= 0;
-  spinButton.textContent = remaining <= 0 ? "Used" : "Spin Now";
+  spinButton.textContent = remaining <= 0 ? "Ya usado" : "Girar ahora";
   isSpinning = false;
 
-  const prizes = campaign.prizes.length ? campaign.prizes : [{ name: "No prizes yet" }];
+  const prizes = campaign.prizes.length ? campaign.prizes : [{ name: "Aún no hay premios" }];
   renderWheel(prizes);
 }
 
@@ -357,7 +357,7 @@ function getWheelLayout() {
 }
 
 function getWheelLabelLines(name, prizeCount) {
-  const label = String(name || "").trim() || "Prize";
+  const label = String(name || "").trim() || "Premio";
   const words = label.split(/\s+/).filter(Boolean);
   if (label.length <= 18 || words.length <= 1) {
     return [label];
@@ -457,7 +457,7 @@ function spinToPrize(prize, updatedCampaign) {
     resultPanel.classList.remove("is-hidden");
     renderCampaign(updatedCampaign);
     wheel.style.transform = `rotate(${currentRotation}deg)`;
-    setMessage("Spin complete.", "success");
+    setMessage("Giro completado.", "success");
   }, 4200);
 }
 
@@ -485,15 +485,15 @@ function setMessage(text, type) {
 
 function defaultPrizePool() {
   return [
-    { name: "Grand Prize", image_url: "", available: null },
-    { name: "$100 Gift Card", image_url: "", available: null },
-    { name: "Bluetooth Speaker", image_url: "", available: null },
-    { name: "Coffee Voucher", image_url: "", available: null },
-    { name: "VIP Upgrade", image_url: "", available: null },
-    { name: "Movie Tickets", image_url: "", available: null },
-    { name: "Merch Bundle", image_url: "", available: null },
-    { name: "Bonus Entry", image_url: "", available: null },
-    { name: "Try Again", image_url: "", available: null }
+    { name: "Gran premio", image_url: "", available: null },
+    { name: "Tarjeta de regalo de $100", image_url: "", available: null },
+    { name: "Altavoz Bluetooth", image_url: "", available: null },
+    { name: "Vale de café", image_url: "", available: null },
+    { name: "Mejora VIP", image_url: "", available: null },
+    { name: "Entradas de cine", image_url: "", available: null },
+    { name: "Paquete promocional", image_url: "", available: null },
+    { name: "Participación extra", image_url: "", available: null },
+    { name: "Inténtalo de nuevo", image_url: "", available: null }
   ];
 }
 

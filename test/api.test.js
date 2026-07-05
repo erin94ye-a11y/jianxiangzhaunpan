@@ -92,7 +92,7 @@ test("site pages expose the Jump Quantum favicon in public and admin modes", asy
   assert.equal(adminIcon.status, 200);
 });
 
-test("public H5 page hides the privacy note and ships nine fallback prize categories", async (t) => {
+test("public H5 page defaults to Spanish and ships nine fallback prize categories", async (t) => {
   const server = startTestServer({ mode: "public" });
   t.after(server.close);
 
@@ -100,21 +100,22 @@ test("public H5 page hides the privacy note and ships nine fallback prize catego
     headers: { accept: "text/html" }
   });
   assert.equal(page.status, 200);
+  assert.match(page.body, /<html lang="es">/);
   assert.doesNotMatch(page.body, /参与抽奖会记录服务器可见 IP/);
   assert.doesNotMatch(page.body, /[\u3400-\u9fff]/);
   assert.doesNotMatch(page.body, /topbar-cta/);
   assert.doesNotMatch(page.body, /CryptoReward/);
   assert.match(page.body, /<img class="brand-logo-image" src="\/assets\/jump-quantum-banner\.png" alt="JUMP QUTARIS" \/>/);
-  assert.match(page.body, /INVESTOR REWARDS EVENT/);
-  assert.match(page.body, /<p class="event-title" aria-label="INVESTOR REWARDS EVENT">INVESTOR REWARDS EVENT<\/p>/);
+  assert.match(page.body, /EVENTO DE RECOMPENSAS/);
+  assert.match(page.body, /<p class="event-title" aria-label="EVENTO DE RECOMPENSAS">EVENTO DE RECOMPENSAS<\/p>/);
   assert.doesNotMatch(page.body, /brand-jump/);
   assert.doesNotMatch(page.body, /brand-quantum/);
   assert.doesNotMatch(page.body, /brand-name/);
   assert.match(page.body, /<section class="vision-panel" aria-labelledby="visionTitle">/);
-  assert.match(page.body, /<h2 id="visionTitle">Our Vision<\/h2>/);
+  assert.match(page.body, /<h2 id="visionTitle">Nuestra visión<\/h2>/);
   assert.doesNotMatch(page.body, /<span>Investor Rewards Event<\/span>/);
-  assert.match(page.body, /success should be shared/);
-  assert.match(page.body, /appreciation, partnership, and long-term growth/);
+  assert.match(page.body, /el éxito debe compartirse/);
+  assert.match(page.body, /aprecio, colaboración y crecimiento a largo plazo/);
   assert.ok(page.body.indexOf('id="resultPanel"') < page.body.indexOf('class="vision-panel"'));
   assert.match(page.body, /brand-divider/);
   assert.match(page.body, /\/assets\/jump-quantum-banner\.png/);
@@ -131,6 +132,9 @@ test("public H5 page hides the privacy note and ships nine fallback prize catego
   });
   assert.equal(script.status, 200);
   assert.doesNotMatch(script.body, /[\u3400-\u9fff]/);
+  assert.match(script.body, /Ingresa tu código\./);
+  assert.match(script.body, /Código verificado\. Tu giro está listo\./);
+  assert.doesNotMatch(script.body, /Please enter your code\./);
   assert.match(script.body, /--label-width/);
   assert.match(script.body, /--label-track-offset/);
   assert.match(script.body, /--label-track-height/);
@@ -191,21 +195,25 @@ test("public H5 page hides the privacy note and ships nine fallback prize catego
   assert.doesNotMatch(styles.body, /\.vision-heading span\s*{/);
 
   const fallbackPrizeNames = [
-    "Grand Prize",
-    "$100 Gift Card",
-    "Bluetooth Speaker",
-    "Coffee Voucher",
-    "VIP Upgrade",
-    "Movie Tickets",
-    "Merch Bundle",
-    "Bonus Entry",
-    "Try Again"
+    "Gran premio",
+    "Tarjeta de regalo de $100",
+    "Altavoz Bluetooth",
+    "Vale de café",
+    "Mejora VIP",
+    "Entradas de cine",
+    "Paquete promocional",
+    "Participación extra",
+    "Inténtalo de nuevo"
   ];
   const defaultPrizePoolSource = script.body.slice(script.body.indexOf("function defaultPrizePool"));
   assert.equal(
     fallbackPrizeNames.filter((name) => defaultPrizePoolSource.includes(`name: "${name}"`)).length,
     9
   );
+
+  const missingCampaign = await server.request("/api/public/campaigns/MISSING1");
+  assert.equal(missingCampaign.status, 404);
+  assert.equal(missingCampaign.body.error, "Código de sorteo no encontrado.");
 });
 
 test("public page keeps the code entry flow and removes the unused reward intro", async (t) => {
@@ -222,12 +230,14 @@ test("public page keeps the code entry flow and removes the unused reward intro"
   assert.doesNotMatch(codeFormHtml, /\srequired\b/);
   assert.match(page.body, /brand-logo-image/);
   assert.match(page.body, /\/assets\/jump-quantum-banner\.png/);
-  assert.match(page.body, /INVESTOR REWARDS EVENT/);
+  assert.match(page.body, /EVENTO DE RECOMPENSAS/);
   assert.match(page.body, /brand-divider/);
-  assert.match(page.body, /Enter your code/);
-  assert.match(page.body, /Prize Wheel/);
-  assert.match(page.body, /Our Vision/);
-  assert.match(page.body, /The Investor Rewards Event was created to recognize and reward/);
+  assert.match(page.body, /Ingresa tu código/);
+  assert.match(page.body, /Ruleta de premios/);
+  assert.match(page.body, /Nuestra visión/);
+  assert.match(page.body, /El Evento de Recompensas para Inversionistas fue creado para reconocer y premiar/);
+  assert.doesNotMatch(page.body, /Enter your code/);
+  assert.doesNotMatch(page.body, /Prize Wheel/);
   assert.doesNotMatch(page.body, /reward-kicker/);
   assert.doesNotMatch(page.body, /stats-strip/);
   assert.doesNotMatch(page.body, /ticket-preview/);
@@ -241,7 +251,9 @@ test("public page keeps the code entry flow and removes the unused reward intro"
     headers: { accept: "text/javascript" }
   });
   assert.equal(script.status, 200);
-  assert.match(script.body, /Please enter your code\./);
+  assert.match(script.body, /Ingresa tu código\./);
+  assert.match(script.body, /Girando\.\.\./);
+  assert.doesNotMatch(script.body, /Please enter your code\./);
   assert.doesNotMatch(script.body, /renderWinnerFeed/);
   assert.doesNotMatch(script.body, /winner-code/);
   assert.doesNotMatch(script.body, /winner-prize/);
@@ -889,7 +901,7 @@ test("a one-use campaign still returns the winning draw response", async (t) => 
   assert.equal(draw.body.campaign.used_count, 1);
 });
 
-test("draw returns a friendly error when prize stock is exhausted", async (t) => {
+test("draw returns a Spanish error when prize stock is exhausted", async (t) => {
   const server = startTestServer();
   t.after(server.close);
 
@@ -920,5 +932,5 @@ test("draw returns a friendly error when prize stock is exhausted", async (t) =>
     body: JSON.stringify({ code: "STOCK2026" })
   });
   assert.equal(second.status, 400);
-  assert.match(second.body.error, /inventory/i);
+  assert.match(second.body.error, /inventario/i);
 });

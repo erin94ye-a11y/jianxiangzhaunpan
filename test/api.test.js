@@ -104,7 +104,7 @@ test("site pages expose the favicon in public and admin modes", async (t) => {
   assert.equal(adminIcon.status, 200);
 });
 
-test("public H5 page defaults to Spanish and ships nine fallback prize categories", async (t) => {
+test("public H5 page defaults to Spanish and ships seven requested fallback prize categories", async (t) => {
   const server = startTestServer({ mode: "public" });
   t.after(server.close);
 
@@ -203,20 +203,18 @@ test("public H5 page defaults to Spanish and ships nine fallback prize categorie
   assert.doesNotMatch(styles.body, /\.vision-heading span\s*{/);
 
   const fallbackPrizeNames = [
-    "Gran premio",
-    "Tarjeta de regalo de $100",
-    "Altavoz Bluetooth",
-    "Vale de café",
-    "Mejora VIP",
-    "Entradas de cine",
-    "Paquete promocional",
-    "Participación extra",
-    "Inténtalo de nuevo"
+    "Acceso al Plan Anual de Crecimiento del equipo del profesor.",
+    "Bono de Trading de 2.000 €",
+    "Un Apple iPhone 17 Pro Max",
+    "Un lingote de oro de inversión de 5 gramos",
+    "Una cafetera de alta calidad",
+    "Tarjeta regalo de El Corte Inglés",
+    "Acceso a una selección de acciones de alta calidad para estudio e investigación"
   ];
   const defaultPrizePoolSource = script.body.slice(script.body.indexOf("function defaultPrizePool"));
   assert.equal(
     fallbackPrizeNames.filter((name) => defaultPrizePoolSource.includes(`name: "${name}"`)).length,
-    9
+    7
   );
 
   const missingCampaign = await server.request("/api/public/campaigns/MISSING1");
@@ -335,7 +333,7 @@ test("admin access log UI replaces draw logs and includes an xlsx export button"
   assert.doesNotMatch(adminScript.body, /renderDraws/);
 });
 
-test("admin default prize examples use investor rewards with blank stock", async (t) => {
+test("admin default prize examples use requested Spanish rewards with blank stock", async (t) => {
   const server = startTestServer({ mode: "admin" });
   t.after(server.close);
 
@@ -349,19 +347,17 @@ test("admin default prize examples use investor rewards with blank stock", async
   );
   assert.deepEqual(
     [
-      "$77 USDT",
-      "#1 Ethereum",
-      "Thanks for playing",
-      "Apple Mac",
-      "iPhone 17 Pro Max",
-      "Thanks for playing",
-      "20 shares of NVDA",
-      "#1 oz gold",
-      "Thanks for playing"
+      "Acceso al Plan Anual de Crecimiento del equipo del profesor.",
+      "Bono de Trading de 2.000 €",
+      "Un Apple iPhone 17 Pro Max",
+      "Un lingote de oro de inversión de 5 gramos",
+      "Una cafetera de alta calidad",
+      "Tarjeta regalo de El Corte Inglés",
+      "Acceso a una selección de acciones de alta calidad para estudio e investigación"
     ].map((name) => defaultPrizeBlock.includes(`name: "${name}"`)),
-    Array(9).fill(true)
+    Array(7).fill(true)
   );
-  assert.equal((defaultPrizeBlock.match(/stock:\s*""/g) || []).length, 9);
+  assert.equal((defaultPrizeBlock.match(/stock:\s*""/g) || []).length, 7);
   assert.doesNotMatch(defaultPrizeBlock, /stock:\s*[0-9]/);
 });
 

@@ -485,15 +485,13 @@ function setMessage(text, type) {
 
 function defaultPrizePool() {
   return [
-    { name: "Gran premio", image_url: "", available: null },
-    { name: "Tarjeta de regalo de $100", image_url: "", available: null },
-    { name: "Altavoz Bluetooth", image_url: "", available: null },
-    { name: "Vale de café", image_url: "", available: null },
-    { name: "Mejora VIP", image_url: "", available: null },
-    { name: "Entradas de cine", image_url: "", available: null },
-    { name: "Paquete promocional", image_url: "", available: null },
-    { name: "Participación extra", image_url: "", available: null },
-    { name: "Inténtalo de nuevo", image_url: "", available: null }
+    { name: "Acceso al Plan Anual de Crecimiento del equipo del profesor.", image_url: "", available: null },
+    { name: "Bono de Trading de 2.000 €", image_url: "", available: null },
+    { name: "Un Apple iPhone 17 Pro Max", image_url: "", available: null },
+    { name: "Un lingote de oro de inversión de 5 gramos", image_url: "", available: null },
+    { name: "Una cafetera de alta calidad", image_url: "", available: null },
+    { name: "Tarjeta regalo de El Corte Inglés", image_url: "", available: null },
+    { name: "Acceso a una selección de acciones de alta calidad para estudio e investigación", image_url: "", available: null }
   ];
 }
 

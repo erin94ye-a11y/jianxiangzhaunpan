@@ -194,7 +194,7 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(styles.body, /--brand-text-size:\s*clamp\(24px,\s*7vw,\s*44px\)/);
   assert.match(styles.body, /--event-title-size:\s*clamp\(11px,\s*2\.2vw,\s*16px\)/);
   assert.doesNotMatch(styles.body, /\.brand-name\s*{/);
-  assert.match(styles.body, /\.brand-divider\s*{[^}]*linear-gradient\(90deg,\s*#ff2d55,\s*#ffd35a\)/s);
+  assert.match(styles.body, /\.brand-divider\s*{[^}]*linear-gradient\(90deg,\s*#ff3d2e,\s*#ff8a1f,\s*#ffd166\)/s);
   assert.match(styles.body, /\.event-title\s*{[^}]*font-size:\s*var\(--event-title-size\)/s);
   assert.match(styles.body, /\.vision-panel\s*{[^}]*border-radius:\s*28px/s);
   assert.match(styles.body, /\.vision-panel\s*{[^}]*grid-column:\s*1\s*\/\s*-1/s);

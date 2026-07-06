@@ -11,15 +11,15 @@ const resultImage = document.querySelector("#resultImage");
 const resultName = document.querySelector("#resultName");
 
 const segmentColors = [
-  "#e23d57",
-  "#078f8a",
-  "#1d3557",
-  "#f5b942",
-  "#8e5cf4",
+  "#e11d48",
   "#f97316",
-  "#2f80ed",
-  "#16a34a",
-  "#6d5dfc"
+  "#f59e0b",
+  "#ef4444",
+  "#fb7185",
+  "#facc15",
+  "#ea580c",
+  "#f43f5e",
+  "#d97706"
 ];
 
 const VISITOR_TOKEN_STORAGE_KEY = "jump_quantum_visitor_token";
@@ -363,11 +363,30 @@ function getWheelLabelLines(name, prizeCount) {
     return [label];
   }
 
-  if (prizeCount >= 9) {
-    return [words.slice(0, -1).join(" "), words.at(-1)];
+  const maxLines = prizeCount >= 7 ? (label.length > 48 ? 4 : 3) : 2;
+
+  return balanceLabelLines(words, maxLines);
+}
+
+function balanceLabelLines(words, maxLines) {
+  const lineCount = Math.min(maxLines, words.length);
+  const lines = Array.from({ length: lineCount }, () => []);
+  const targetLength = Math.ceil(words.join(" ").length / lineCount);
+  let lineIndex = 0;
+
+  for (const word of words) {
+    const line = lines[lineIndex];
+    const nextLength = [...line, word].join(" ").length;
+    const canMoveForward = lineIndex < lineCount - 1 && line.length > 0 && nextLength > targetLength;
+
+    if (canMoveForward) {
+      lineIndex += 1;
+    }
+
+    lines[lineIndex].push(word);
   }
 
-  return words.length <= 2 ? words : [words.slice(0, -1).join(" "), words.at(-1)];
+  return lines.map((line) => line.join(" ")).filter(Boolean);
 }
 
 function getWheelLabelMetrics(lines, prizeCount, angle, layout) {

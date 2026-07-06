@@ -42,7 +42,7 @@ export function createApp(options = {}) {
     options.uploadDir || process.env.UPLOAD_DIR || join(projectRoot, "uploads");
   const publicDir = options.publicDir || join(projectRoot, "public");
   const adminDir = options.adminDir || join(projectRoot, "admin");
-  const mode = options.mode || process.env.APP_MODE || "public";
+  const mode = options.mode || process.env.APP_MODE || "all";
   const publicEnabled = mode === "public" || mode === "all";
   const adminEnabled = mode === "admin" || mode === "all";
   const adminUser = options.adminUser || process.env.ADMIN_USER || "admin";
@@ -83,6 +83,10 @@ export function createApp(options = {}) {
   }
 
   if (adminEnabled) {
+    app.get(["/admin", "/admin/"], (_request, response) => {
+      response.sendFile(join(adminDir, "admin.html"));
+    });
+
     if (!publicEnabled) {
       app.get("/", (_request, response) => {
         response.sendFile(join(adminDir, "admin.html"));
@@ -448,7 +452,7 @@ function readCookie(cookieHeader, name) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const mode = process.env.APP_MODE || "public";
+  const mode = process.env.APP_MODE || "all";
   const port = Number(process.env.PORT || (mode === "admin" ? 3001 : 3000));
   createApp({ mode }).listen(port, () => {
     console.log(`Lucky wheel ${mode} server is running on port ${port}`);

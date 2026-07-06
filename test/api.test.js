@@ -53,6 +53,74 @@ function startTestServer(options = {}) {
   return { request, baseUrl, close: () => server.close() };
 }
 
+function startRuntimeDefaultServer() {
+  const workspace = mkdtempSync(join(tmpdir(), "lucky-wheel-default-"));
+  const app = createApp({
+    databasePath: join(workspace, "test.db"),
+    uploadDir: join(workspace, "uploads"),
+    sessionSecret: "test-secret",
+    adminUser: "admin",
+    adminPassword: "admin"
+  });
+  const server = app.listen(0);
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+
+  async function request(path, options = {}) {
+    const response = await fetch(`${baseUrl}${path}`, {
+      ...options,
+      headers: {
+        ...(options.headers ?? {})
+      }
+    });
+    const text = await response.text();
+    let body = null;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = text;
+    }
+    return { status: response.status, body, headers: response.headers };
+  }
+
+  return { request, baseUrl, close: () => server.close() };
+}
+
+test("default deployment serves public page and admin login under /admin", async (t) => {
+  const originalAppMode = process.env.APP_MODE;
+  delete process.env.APP_MODE;
+  t.after(() => {
+    if (originalAppMode === undefined) {
+      delete process.env.APP_MODE;
+    } else {
+      process.env.APP_MODE = originalAppMode;
+    }
+  });
+
+  const server = startRuntimeDefaultServer();
+  t.after(server.close);
+
+  const publicPage = await server.request("/", {
+    headers: { accept: "text/html" }
+  });
+  assert.equal(publicPage.status, 200);
+  assert.match(publicPage.body, /<title>STIFEL<\/title>/);
+
+  const adminPage = await server.request("/admin", {
+    headers: { accept: "text/html" }
+  });
+  assert.equal(adminPage.status, 200);
+  assert.match(adminPage.body, /后台登录|鍚庡彴鐧诲綍/);
+
+  const adminPageWithSlash = await server.request("/admin/", {
+    headers: { accept: "text/html" }
+  });
+  assert.equal(adminPageWithSlash.status, 200);
+  assert.match(adminPageWithSlash.body, /后台登录|鍚庡彴鐧诲綍/);
+
+  const adminApi = await server.request("/api/admin/me");
+  assert.equal(adminApi.status, 401);
+});
+
 test("public mode does not expose admin login page or admin APIs", async (t) => {
   const server = startTestServer({ mode: "public" });
   t.after(server.close);
@@ -61,6 +129,11 @@ test("public mode does not expose admin login page or admin APIs", async (t) => 
     headers: { accept: "text/html" }
   });
   assert.equal(adminPage.status, 404);
+
+  const adminRoute = await server.request("/admin", {
+    headers: { accept: "text/html" }
+  });
+  assert.equal(adminRoute.status, 404);
 
   const adminApi = await server.request("/api/admin/me");
   assert.equal(adminApi.status, 404);

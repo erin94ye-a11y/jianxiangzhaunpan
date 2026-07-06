@@ -567,47 +567,44 @@ button.danger:hover {
 }
 
 .wheel-label {
-  align-items: center;
   -webkit-text-stroke: 0.35px rgba(74, 18, 6, 0.86);
+  clip-path: var(--label-clip);
   color: #fff7d6;
-  display: flex;
+  display: block;
   font-size: var(--label-font-size, 15px);
   font-weight: 900;
-  height: var(--label-track-height, 24px);
-  justify-content: flex-start;
-  left: 50%;
-  line-height: 1.02;
+  inset: 0;
+  line-height: 0.98;
   overflow: hidden;
   paint-order: stroke fill;
   position: absolute;
-  text-align: left;
+  text-align: center;
   text-shadow:
     0 1px 1px rgba(74, 18, 6, 0.9),
     0 2px 5px rgba(74, 18, 6, 0.58),
     0 0 8px rgba(255, 235, 173, 0.32);
-  top: calc(50% - var(--label-track-height, 24px) / 2);
-  transform: rotate(var(--label-rotation)) translateX(var(--label-track-offset));
-  transform-origin: 0 50%;
-  width: var(--label-track-width);
+  width: 100%;
   z-index: 2;
 }
 
 .wheel-label.is-flipped {
-  justify-content: flex-end;
-  text-align: right;
+  text-align: center;
 }
 
 .wheel-label-text {
   display: grid;
   gap: 1px;
+  left: var(--label-x);
   min-width: 0;
-  place-items: center start;
-  transform: rotate(var(--label-text-rotation));
+  place-items: center;
+  position: absolute;
+  top: var(--label-y);
+  transform: translate(-50%, -50%) rotate(var(--label-text-rotation));
   width: var(--label-width);
 }
 
 .wheel-label.is-flipped .wheel-label-text {
-  place-items: center end;
+  place-items: center;
 }
 
 .wheel-label-line {

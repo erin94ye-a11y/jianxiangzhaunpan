@@ -323,12 +323,11 @@ function renderWheel(prizes) {
     const label = document.createElement("div");
     label.className = "wheel-label";
     const nameLines = getWheelLabelLines(prize.name, prizes.length);
-    const labelMetrics = getWheelLabelMetrics(nameLines, prizes.length, angle, wheelLayout);
+    const labelMetrics = getWheelLabelMetrics(nameLines, prizes.length, angle, slice, wheelLayout);
     label.style.setProperty("--label-width", `${labelMetrics.width}px`);
-    label.style.setProperty("--label-track-width", `${labelMetrics.trackWidth}px`);
-    label.style.setProperty("--label-track-height", `${labelMetrics.trackHeight}px`);
-    label.style.setProperty("--label-track-offset", `${labelMetrics.trackOffset}px`);
-    label.style.setProperty("--label-rotation", `${labelMetrics.rotation}deg`);
+    label.style.setProperty("--label-x", `${labelMetrics.x}px`);
+    label.style.setProperty("--label-y", `${labelMetrics.y}px`);
+    label.style.setProperty("--label-clip", labelMetrics.clipPath);
     label.style.setProperty("--label-text-rotation", `${labelMetrics.textRotation}deg`);
     label.style.setProperty("--label-font-size", `${labelMetrics.fontSize}px`);
     label.classList.toggle("is-flipped", labelMetrics.isFlipped);
@@ -359,11 +358,12 @@ function getWheelLayout() {
 function getWheelLabelLines(name, prizeCount) {
   const label = String(name || "").trim() || "Premio";
   const words = label.split(/\s+/).filter(Boolean);
-  if (label.length <= 18 || words.length <= 1) {
+  const dense = prizeCount >= 7;
+  if (label.length <= (dense ? 12 : 18) || words.length <= 1) {
     return [label];
   }
 
-  const maxLines = prizeCount >= 7 ? (label.length > 42 ? 5 : 4) : 2;
+  const maxLines = dense ? (label.length > 30 ? 3 : 2) : 2;
 
   return balanceLabelLines(words, maxLines);
 }
@@ -401,49 +401,63 @@ function balanceLabelLines(words, maxLines) {
   return lines.filter(Boolean);
 }
 
-function getWheelLabelMetrics(lines, prizeCount, angle, layout) {
+function getWheelLabelMetrics(lines, prizeCount, angle, slice, layout) {
   const wheelRadius = layout.wheelRadius;
   const crowded = prizeCount >= 9;
   const dense = prizeCount >= 7;
-  const centerClearance = Math.max(wheelRadius * (crowded ? 0.34 : dense ? 0.34 : 0.22), dense ? 54 : 42);
-  const innerGap = crowded ? 7 : dense ? 8 : 14;
-  const outerGap = crowded ? 14 : dense ? 16 : 26;
-  const trackOffset = Math.round(centerClearance + innerGap);
-  const trackWidth = Math.round(Math.max(dense ? 58 : 72, wheelRadius - outerGap - trackOffset));
-  const fontSize = getWheelLabelFontSize(lines, prizeCount, trackWidth);
-  const trackHeight = Math.round(lines.length * fontSize * 1.03 + Math.max(0, lines.length - 1));
+  const labelRadius = Math.round(wheelRadius * (crowded ? 0.58 : dense ? 0.58 : 0.58));
+  const labelWidth = Math.round(Math.min(wheelRadius * (dense ? 0.46 : 0.54), dense ? 82 : 110));
+  const fontSize = getWheelLabelFontSize(lines, prizeCount, labelWidth);
+  const radians = (angle * Math.PI) / 180;
+  const clipPath = getWheelSegmentClipPath(angle, slice, dense ? 0.75 : 1.5);
   const normalizedAngle = normalizeDegrees(angle);
   const isFlipped = normalizedAngle > 90 && normalizedAngle < 270;
 
   return {
+    clipPath,
     fontSize,
     isFlipped,
-    rotation: Number(angle.toFixed(3)),
-    textRotation: isFlipped ? 180 : 0,
-    trackHeight,
-    trackOffset,
-    trackWidth,
-    width: trackWidth
+    textRotation: Number((isFlipped ? angle + 180 : angle).toFixed(3)),
+    width: labelWidth,
+    x: Math.round(wheelRadius + Math.cos(radians) * labelRadius),
+    y: Math.round(wheelRadius + Math.sin(radians) * labelRadius)
+  };
+}
+
+function getWheelSegmentClipPath(angle, slice, paddingDegrees) {
+  const start = angle - slice / 2 + paddingDegrees;
+  const end = angle + slice / 2 - paddingDegrees;
+  const startPoint = getClipPathPoint(start);
+  const endPoint = getClipPathPoint(end);
+
+  return `polygon(50% 50%, ${startPoint.x}% ${startPoint.y}%, ${endPoint.x}% ${endPoint.y}%)`;
+}
+
+function getClipPathPoint(angle) {
+  const radians = (angle * Math.PI) / 180;
+  return {
+    x: Number((50 + Math.cos(radians) * 50).toFixed(3)),
+    y: Number((50 + Math.sin(radians) * 50).toFixed(3))
   };
 }
 
 function getWheelLabelFontSize(lines, prizeCount, trackWidth) {
   const length = lines.join("").length;
   const longestLine = Math.max(...lines.map((line) => line.length));
-  const maxByTrack = Math.floor((trackWidth - 4) / Math.max(1, longestLine * 0.56));
-  const minimumSize = prizeCount >= 9 ? 8 : prizeCount >= 7 ? 8.5 : 12;
-  const maximumSize = prizeCount >= 9 ? 13 : prizeCount >= 7 ? 14 : 18;
+  const maxByTrack = (trackWidth - 4) / Math.max(1, longestLine * 0.56);
+  const minimumSize = prizeCount >= 9 ? 6.6 : prizeCount >= 7 ? 6.8 : 12;
+  const maximumSize = prizeCount >= 9 ? 10 : prizeCount >= 7 ? 11 : 18;
   let preferredSize = maximumSize;
 
   if (prizeCount >= 9) {
-    preferredSize = length > 28 ? 9 : 12;
+    preferredSize = length > 30 ? 7.2 : 8.6;
   } else if (prizeCount >= 7) {
-    preferredSize = length > 34 ? 9.5 : 12;
+    preferredSize = length > 36 ? 7.8 : length > 22 ? 8.6 : 9.6;
   } else {
     preferredSize = length > 18 ? 14 : 17;
   }
 
-  return Math.max(minimumSize, Math.min(preferredSize, maximumSize, maxByTrack));
+  return Number(Math.max(minimumSize, Math.min(preferredSize, maximumSize, maxByTrack)).toFixed(2));
 }
 
 function getWheelImageMetrics(prizeCount, angle, layout) {

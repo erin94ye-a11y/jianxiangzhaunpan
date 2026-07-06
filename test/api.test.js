@@ -144,16 +144,15 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(script.body, /Código verificado\. Tu giro está listo\./);
   assert.doesNotMatch(script.body, /Please enter your code\./);
   assert.match(script.body, /--label-width/);
-  assert.match(script.body, /--label-track-offset/);
-  assert.match(script.body, /--label-track-height/);
+  assert.match(script.body, /--label-x/);
+  assert.match(script.body, /--label-y/);
+  assert.match(script.body, /--label-clip/);
   assert.match(script.body, /getWheelLabelLines/);
   assert.match(script.body, /getWheelLayout/);
   assert.match(script.body, /getWheelLabelMetrics/);
   assert.match(script.body, /getWheelImageMetrics/);
   assert.match(script.body, /wheel-prize-image/);
   assert.match(script.body, /getSpinRotation/);
-  assert.match(script.body, /--label-rotation/);
-  assert.match(script.body, /--label-track-width/);
   assert.match(script.body, /collectVisitorInfo/);
   assert.match(script.body, /reportVisitor/);
   assert.match(script.body, /\/api\/public\/visits/);
@@ -170,9 +169,9 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
     headers: { accept: "text/css" }
   });
   assert.equal(styles.status, 200);
-  assert.match(styles.body, /rotate\(var\(--label-rotation\)\)/);
-  assert.match(styles.body, /translateX\(var\(--label-track-offset\)\)/);
-  assert.match(styles.body, /width:\s*var\(--label-track-width\)/);
+  assert.match(styles.body, /clip-path:\s*var\(--label-clip\)/);
+  assert.match(styles.body, /left:\s*var\(--label-x\)/);
+  assert.match(styles.body, /top:\s*var\(--label-y\)/);
   assert.match(styles.body, /--label-text-rotation/);
   assert.match(styles.body, /width:\s*var\(--label-width\)/);
   assert.match(styles.body, /\.wheel-label-line/);
@@ -201,10 +200,12 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(styles.body, /\.vision-panel h2\s*{[^}]*font-size:\s*clamp\(26px,\s*7vw,\s*42px\)/s);
   assert.match(styles.body, /\.vision-copy\s*{[^}]*line-height:\s*1\.72/s);
   assert.match(styles.body, /\.wheel-label\s*{[^}]*color:\s*#fff7d6/s);
+  assert.match(styles.body, /\.wheel-label\s*{[^}]*clip-path:\s*var\(--label-clip\)/s);
   assert.match(styles.body, /\.wheel-label\s*{[^}]*-webkit-text-stroke:\s*0\.35px/s);
   assert.doesNotMatch(styles.body, /\.vision-heading span\s*{/);
-  assert.match(script.body, /label\.length > 42 \? 5 : 4/);
-  assert.match(script.body, /wheelRadius \* \(crowded \? 0\.34 : dense \? 0\.34 : 0\.22\)/);
+  assert.match(script.body, /label\.length > 30 \? 3 : 2/);
+  assert.match(script.body, /wheelRadius \* \(crowded \? 0\.58 : dense \? 0\.58 : 0\.58\)/);
+  assert.match(script.body, /getWheelSegmentClipPath\(angle,\s*slice/);
 
   const fallbackPrizeNames = [
     "Acceso al plan anual + 2.000€ en bonificaciones",

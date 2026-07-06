@@ -566,52 +566,14 @@ button.danger:hover {
   border-width: 2px;
 }
 
-.wheel-label {
-  -webkit-text-stroke: 0.35px rgba(74, 18, 6, 0.86);
-  clip-path: var(--label-clip);
-  color: #fff7d6;
+.wheel-label-canvas {
   display: block;
-  font-weight: 900;
+  height: 100%;
   inset: 0;
-  line-height: var(--label-line-height, 0.98);
-  overflow: hidden;
-  paint-order: stroke fill;
   pointer-events: none;
   position: absolute;
-  text-align: center;
-  text-shadow:
-    0 1px 1px rgba(74, 18, 6, 0.9),
-    0 2px 5px rgba(74, 18, 6, 0.58),
-    0 0 8px rgba(255, 235, 173, 0.32);
   width: 100%;
   z-index: 2;
-}
-
-.wheel-label.is-flipped {
-  text-align: center;
-}
-
-.wheel-label-text {
-  display: contents;
-}
-
-.wheel-label.is-flipped .wheel-label-text {
-  place-items: center;
-}
-
-.wheel-label-line {
-  display: block;
-  font-size: var(--line-font-size);
-  left: var(--line-x);
-  max-width: 100%;
-  overflow: hidden;
-  position: absolute;
-  text-overflow: clip;
-  top: var(--line-y);
-  transform: translate(-50%, -50%) rotate(var(--label-text-rotation));
-  white-space: nowrap;
-  width: var(--line-width);
-  word-break: keep-all;
 }
 
 .spin-button {
@@ -1449,15 +1411,6 @@ td {
     border-width: 7px;
     height: 58px;
     width: 58px;
-  }
-
-  .wheel-label {
-    line-height: 1.02;
-  }
-
-  .wheel-label img {
-    height: 34px;
-    width: 34px;
   }
 
   .spin-button {

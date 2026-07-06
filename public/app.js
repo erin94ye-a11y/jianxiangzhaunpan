@@ -300,6 +300,10 @@ function renderWheel(prizes) {
   wheel.innerHTML = "";
 
   const wheelLayout = getWheelLayout();
+  const labelCanvas = document.createElement("canvas");
+  labelCanvas.className = "wheel-label-canvas";
+  wheel.append(labelCanvas);
+
   prizes.forEach((prize, index) => {
     const angle = index * slice + slice / 2 - 90;
 
@@ -319,30 +323,9 @@ function renderWheel(prizes) {
       imageFrame.append(image);
       wheel.append(imageFrame);
     }
-
-    const label = document.createElement("div");
-    label.className = "wheel-label";
-    const labelMetrics = getWheelLabelMetrics(prize.name, prizes.length, angle, slice, wheelLayout);
-    label.style.setProperty("--label-clip", labelMetrics.clipPath);
-    label.style.setProperty("--label-text-rotation", `${labelMetrics.textRotation}deg`);
-    label.style.setProperty("--label-line-height", labelMetrics.lineHeight);
-    label.classList.toggle("is-flipped", labelMetrics.isFlipped);
-
-    const name = document.createElement("span");
-    name.className = "wheel-label-text";
-    for (const line of labelMetrics.lines) {
-      const lineNode = document.createElement("span");
-      lineNode.className = "wheel-label-line";
-      lineNode.style.setProperty("--line-x", `${line.x}px`);
-      lineNode.style.setProperty("--line-y", `${line.y}px`);
-      lineNode.style.setProperty("--line-width", `${line.width}px`);
-      lineNode.style.setProperty("--line-font-size", `${line.fontSize}px`);
-      lineNode.textContent = line.text;
-      name.append(lineNode);
-    }
-    label.append(name);
-    wheel.append(label);
   });
+
+  drawWheelLabels(prizes, slice, wheelLayout, labelCanvas);
 }
 
 function getWheelLayout() {
@@ -351,6 +334,7 @@ function getWheelLayout() {
   const wheelRadius = wheelSize / 2;
 
   return {
+    wheelSize,
     wheelRadius
   };
 }
@@ -359,43 +343,96 @@ const WHEEL_LABEL_FONT_FAMILY =
   "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif";
 let wheelLabelMeasureContext = null;
 
+function drawWheelLabels(prizes, slice, layout, canvas) {
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return;
+  }
+
+  const wheelSize = Math.round(layout.wheelSize);
+  const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
+  canvas.width = Math.round(wheelSize * pixelRatio);
+  canvas.height = Math.round(wheelSize * pixelRatio);
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  context.clearRect(0, 0, wheelSize, wheelSize);
+
+  const debugLabels = [];
+  prizes.forEach((prize, index) => {
+    const angle = index * slice + slice / 2 - 90;
+    const labelMetrics = getWheelLabelMetrics(prize.name, prizes.length, angle, slice, layout);
+    drawWheelLabel(context, labelMetrics);
+    debugLabels.push({
+      angle: labelMetrics.angle,
+      blockHeight: Number(labelMetrics.blockHeight.toFixed(2)),
+      fontSize: labelMetrics.fontSize,
+      labelHeight: Number(labelMetrics.bounds.labelHeight.toFixed(2)),
+      labelWidth: Number(labelMetrics.bounds.labelWidth.toFixed(2)),
+      lines: labelMetrics.lines,
+      prize: prize.name
+    });
+  });
+
+  canvas.dataset.labelCount = String(debugLabels.length);
+  canvas.dataset.minFontSize = String(Math.min(...debugLabels.map((item) => item.fontSize)));
+  canvas.dataset.maxBlockRatio = String(
+    Math.max(...debugLabels.map((item) => item.blockHeight / Math.max(1, item.labelHeight))).toFixed(3)
+  );
+  window.__wheelLabelDebug = debugLabels;
+}
+
 function getWheelLabelMetrics(name, prizeCount, angle, slice, layout) {
   const wheelRadius = layout.wheelRadius;
   const bounds = getWheelLabelBounds(prizeCount, slice, wheelRadius);
   const lines = getAdaptiveWheelLabelLines(name, bounds, prizeCount);
   const fontSize = getAdaptiveWheelLabelFontSize(lines, bounds);
-  const lineFrames = getWheelLabelLineFrames(lines, bounds, fontSize, angle, wheelRadius);
-  const clipPath = getWheelSegmentClipPath(angle, slice, bounds);
+  const lineHeightPx = fontSize * bounds.lineHeight;
+  const blockHeight = lines.length * lineHeightPx + Math.max(0, lines.length - 1) * bounds.lineGap;
+  const labelRadius = bounds.centerRadius;
+  const radians = (angle * Math.PI) / 180;
 
   return {
-    clipPath,
-    isFlipped: false,
-    lineHeight: bounds.lineHeight,
-    lines: lineFrames,
-    textRotation: getRadialWheelLabelRotation(angle)
+    angle,
+    blockHeight,
+    bounds,
+    fontSize,
+    labelRadius,
+    lineHeightPx,
+    lines,
+    slice,
+    textRotation: getRadialWheelLabelRotation(angle),
+    wheelRadius,
+    x: wheelRadius + Math.cos(radians) * labelRadius,
+    y: wheelRadius + Math.sin(radians) * labelRadius
   };
 }
 
 function getWheelLabelBounds(prizeCount, slice, wheelRadius) {
   const crowded = prizeCount >= 9;
   const dense = prizeCount >= 7;
-  const innerRadiusScale = crowded ? 0.4 : dense ? 0.39 : 0.35;
-  const outerRadiusScale = crowded ? 0.86 : dense ? 0.89 : 0.88;
-  const paddingDegrees = crowded ? 7 : dense ? 6.5 : 4.5;
-  const centerRadiusScale = Number(((innerRadiusScale + outerRadiusScale) / 2).toFixed(3));
+  const innerRadiusScale = crowded ? 0.42 : dense ? 0.4 : 0.36;
+  const outerRadiusScale = crowded ? 0.85 : dense ? 0.87 : 0.88;
+  const paddingDegrees = crowded ? 8 : dense ? 7.5 : 5;
   const usableAngle = Math.max(8, slice - paddingDegrees * 2);
   const radialPadding = Math.max(7, wheelRadius * 0.035);
-  const tangentPadding = Math.max(7, wheelRadius * 0.045);
+  const tangentPadding = Math.max(8, wheelRadius * 0.052);
   const innerRadius = innerRadiusScale * wheelRadius + radialPadding / 2;
   const outerRadius = outerRadiusScale * wheelRadius - radialPadding / 2;
   const radialLength = Math.max(44, outerRadius - innerRadius);
+  const centerRadius = (innerRadius + outerRadius) / 2;
+  const labelHeight = Math.max(36, radialLength * 0.76);
+  const labelWidth = Math.max(
+    30,
+    2 * centerRadius * Math.sin(((usableAngle / 2) * Math.PI) / 180) - tangentPadding
+  );
 
   return {
-    centerRadiusScale,
+    centerRadius,
     innerRadiusScale,
     innerRadius,
-    lineGap: 0,
-    lineHeight: 0.9,
+    labelHeight,
+    labelWidth,
+    lineGap: Math.max(0, Math.round(wheelRadius * 0.002)),
+    lineHeight: 0.92,
     maxFontSize: getWheelLabelMaxFontSize(prizeCount, wheelRadius),
     outerRadiusScale,
     outerRadius,
@@ -405,6 +442,61 @@ function getWheelLabelBounds(prizeCount, slice, wheelRadius) {
     usableAngle,
     wheelRadius
   };
+}
+
+function drawWheelLabel(context, metrics) {
+  const { angle, blockHeight, bounds, fontSize, lineHeightPx, lines, slice, textRotation, wheelRadius, x, y } = metrics;
+  const firstLineY = -blockHeight / 2 + lineHeightPx / 2;
+
+  context.save();
+  clipWheelLabelSegment(context, angle, slice, bounds, wheelRadius);
+  context.translate(x, y);
+  context.rotate((textRotation * Math.PI) / 180);
+  context.font = `900 ${fontSize}px ${WHEEL_LABEL_FONT_FAMILY}`;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.lineJoin = "round";
+  context.miterLimit = 2;
+
+  lines.forEach((line, index) => {
+    const lineY = firstLineY + index * (lineHeightPx + bounds.lineGap);
+    context.save();
+    context.shadowColor = "rgba(74, 18, 6, 0.5)";
+    context.shadowBlur = 3;
+    context.shadowOffsetY = 1;
+    context.fillStyle = "#fff7d6";
+    context.fillText(line, 0, lineY, bounds.labelWidth);
+    context.restore();
+
+    context.lineWidth = Math.max(1.2, fontSize * 0.14);
+    context.strokeStyle = "rgba(74, 18, 6, 0.86)";
+    context.strokeText(line, 0, lineY, bounds.labelWidth);
+    context.fillStyle = "#fff7d6";
+    context.fillText(line, 0, lineY, bounds.labelWidth);
+  });
+
+  context.restore();
+}
+
+function clipWheelLabelSegment(context, angle, slice, options, wheelRadius) {
+  const start = angle - slice / 2 + options.paddingDegrees;
+  const end = angle + slice / 2 - options.paddingDegrees;
+  const outerStart = getCanvasPoint(start, options.outerRadius);
+  const outerCenter = getCanvasPoint(angle, options.outerRadius);
+  const outerEnd = getCanvasPoint(end, options.outerRadius);
+  const innerEnd = getCanvasPoint(end, options.innerRadius);
+  const innerCenter = getCanvasPoint(angle, options.innerRadius);
+  const innerStart = getCanvasPoint(start, options.innerRadius);
+
+  context.beginPath();
+  context.moveTo(wheelRadius + outerStart.x, wheelRadius + outerStart.y);
+  context.lineTo(wheelRadius + outerCenter.x, wheelRadius + outerCenter.y);
+  context.lineTo(wheelRadius + outerEnd.x, wheelRadius + outerEnd.y);
+  context.lineTo(wheelRadius + innerEnd.x, wheelRadius + innerEnd.y);
+  context.lineTo(wheelRadius + innerCenter.x, wheelRadius + innerCenter.y);
+  context.lineTo(wheelRadius + innerStart.x, wheelRadius + innerStart.y);
+  context.closePath();
+  context.clip();
 }
 
 function getRadialWheelLabelRotation(angle) {
@@ -442,12 +534,10 @@ function getAdaptiveWheelLabelLines(name, bounds, prizeCount) {
     for (const lines of getWheelLabelLineCandidates(tokens, lineCount)) {
       const fontSize = getAdaptiveWheelLabelFontSize(lines, bounds);
       const measuredWidths = lines.map((line) => measureWheelLabelText(line, fontSize));
-      const lineFrames = getWheelLabelLineFrames(lines, bounds, fontSize, 0, bounds.wheelRadius);
       const widestLine = Math.max(...measuredWidths);
       const narrowestLine = Math.min(...measuredWidths);
-      const narrowestFrame = Math.min(...lineFrames.map((line) => line.width));
-      const balancePenalty = ((widestLine - narrowestLine) / Math.max(1, narrowestFrame)) * 0.35;
-      const score = fontSize - balancePenalty - lineCount * 0.04;
+      const balancePenalty = ((widestLine - narrowestLine) / Math.max(1, bounds.labelWidth)) * 0.2;
+      const score = fontSize - balancePenalty - lineCount * 0.06;
 
       if (
         !bestCandidate ||
@@ -485,7 +575,7 @@ function getWheelLabelTokens(label) {
       continue;
     }
 
-    tokens.push(token);
+    tokens.push(...splitWheelLabelToken(token));
   }
 
   if (groupedTokens.length > 0) {
@@ -493,6 +583,15 @@ function getWheelLabelTokens(label) {
   }
 
   return tokens;
+}
+
+function splitWheelLabelToken(token) {
+  if (token.length < 12 || /[0-9€()+]/.test(token)) {
+    return [token];
+  }
+
+  const splitIndex = Math.ceil(token.length / 2);
+  return [`${token.slice(0, splitIndex)}-`, token.slice(splitIndex)];
 }
 
 function getWheelLabelLineCandidates(tokens, lineCount) {
@@ -516,71 +615,16 @@ function getWheelLabelLineCandidates(tokens, lineCount) {
   return candidates;
 }
 
-function getWheelSegmentClipPath(angle, slice, options) {
-  const start = angle - slice / 2 + options.paddingDegrees;
-  const end = angle + slice / 2 - options.paddingDegrees;
-  const outerStart = getClipPathPoint(start, options.outerRadiusScale);
-  const outerCenter = getClipPathPoint(angle, options.outerRadiusScale);
-  const outerEnd = getClipPathPoint(end, options.outerRadiusScale);
-  const innerEnd = getClipPathPoint(end, options.innerRadiusScale);
-  const innerCenter = getClipPathPoint(angle, options.innerRadiusScale);
-  const innerStart = getClipPathPoint(start, options.innerRadiusScale);
-
-  return `polygon(${formatClipPoint(outerStart)}, ${formatClipPoint(outerCenter)}, ${formatClipPoint(outerEnd)}, ${formatClipPoint(innerEnd)}, ${formatClipPoint(innerCenter)}, ${formatClipPoint(innerStart)})`;
-}
-
-function getWheelLabelLineFrames(lines, bounds, fontSize, angle, wheelRadius) {
-  const radians = (angle * Math.PI) / 180;
-  const lineBoxHeight = fontSize * bounds.lineHeight;
-  const step = lineBoxHeight + bounds.lineGap;
-  const blockHeight = lines.length * lineBoxHeight + Math.max(0, lines.length - 1) * bounds.lineGap;
-  const centerRadius = (bounds.innerRadius + bounds.outerRadius) / 2;
-  let firstRadius = centerRadius - blockHeight / 2 + lineBoxHeight / 2;
-  const lastRadius = firstRadius + Math.max(0, lines.length - 1) * step;
-
-  if (firstRadius < bounds.innerRadius) {
-    firstRadius += bounds.innerRadius - firstRadius;
-  }
-  if (lastRadius > bounds.outerRadius) {
-    firstRadius -= lastRadius - bounds.outerRadius;
-  }
-
-  firstRadius = clamp(firstRadius, bounds.innerRadius, bounds.outerRadius);
-
-  return lines.map((text, index) => {
-    const radius = clamp(firstRadius + index * step, bounds.innerRadius, bounds.outerRadius);
-    const lineWidth = Math.floor(getWheelLabelTangentWidth(radius, bounds, fontSize));
-
-    return {
-      fontSize: Number(fontSize.toFixed(2)),
-      text,
-      width: lineWidth,
-      x: Math.round(wheelRadius + Math.cos(radians) * radius),
-      y: Math.round(wheelRadius + Math.sin(radians) * radius)
-    };
-  });
-}
-
-function getWheelLabelTangentWidth(radius, bounds, fontSize = 0) {
-  const halfAngleRadians = ((bounds.usableAngle / 2) * Math.PI) / 180;
-  const safetyPadding = Math.max(bounds.tangentPadding, fontSize);
-  return Math.max(24, 2 * radius * Math.sin(halfAngleRadians) - safetyPadding);
-}
-
-function getClipPathPoint(angle, radiusScale) {
+function getCanvasPoint(angle, radius) {
   const radians = (angle * Math.PI) / 180;
   return {
-    x: Number((50 + Math.cos(radians) * 50 * radiusScale).toFixed(3)),
-    y: Number((50 + Math.sin(radians) * 50 * radiusScale).toFixed(3))
+    x: Math.cos(radians) * radius,
+    y: Math.sin(radians) * radius
   };
 }
 
-function formatClipPoint(point) {
-  return `${point.x}% ${point.y}%`;
-}
-
 function getAdaptiveWheelLabelFontSize(lines, bounds) {
-  let low = 6.5;
+  let low = 7.8;
   let high = bounds.maxFontSize;
 
   for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -597,12 +641,9 @@ function getAdaptiveWheelLabelFontSize(lines, bounds) {
 
 function doesWheelLabelFit(lines, bounds, fontSize) {
   const textHeight = lines.length * fontSize * bounds.lineHeight + Math.max(0, lines.length - 1) * bounds.lineGap;
-  const lineFrames = getWheelLabelLineFrames(lines, bounds, fontSize, 0, bounds.wheelRadius);
+  const widestLine = Math.max(...lines.map((line) => measureWheelLabelText(line, fontSize)));
 
-  return (
-    textHeight <= bounds.radialLength &&
-    lines.every((line, index) => measureWheelLabelText(line, fontSize) <= lineFrames[index].width)
-  );
+  return textHeight <= bounds.labelHeight && widestLine <= bounds.labelWidth;
 }
 
 function measureWheelLabelText(text, fontSize) {

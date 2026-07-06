@@ -405,11 +405,15 @@ function getWheelLabelMetrics(lines, prizeCount, angle, slice, layout) {
   const wheelRadius = layout.wheelRadius;
   const crowded = prizeCount >= 9;
   const dense = prizeCount >= 7;
-  const labelRadius = Math.round(wheelRadius * (crowded ? 0.58 : dense ? 0.58 : 0.58));
+  const labelRadius = Math.round(wheelRadius * (crowded ? 0.62 : dense ? 0.62 : 0.58));
   const labelWidth = Math.round(Math.min(wheelRadius * (dense ? 0.46 : 0.54), dense ? 82 : 110));
   const fontSize = getWheelLabelFontSize(lines, prizeCount, labelWidth);
   const radians = (angle * Math.PI) / 180;
-  const clipPath = getWheelSegmentClipPath(angle, slice, dense ? 0.75 : 1.5);
+  const clipPath = getWheelSegmentClipPath(angle, slice, {
+    innerRadiusScale: dense ? 0.37 : 0.32,
+    outerRadiusScale: dense ? 0.94 : 0.93,
+    paddingDegrees: dense ? 2 : 1.5
+  });
   const normalizedAngle = normalizeDegrees(angle);
   const isFlipped = normalizedAngle > 90 && normalizedAngle < 270;
 
@@ -424,21 +428,29 @@ function getWheelLabelMetrics(lines, prizeCount, angle, slice, layout) {
   };
 }
 
-function getWheelSegmentClipPath(angle, slice, paddingDegrees) {
-  const start = angle - slice / 2 + paddingDegrees;
-  const end = angle + slice / 2 - paddingDegrees;
-  const startPoint = getClipPathPoint(start);
-  const endPoint = getClipPathPoint(end);
+function getWheelSegmentClipPath(angle, slice, options) {
+  const start = angle - slice / 2 + options.paddingDegrees;
+  const end = angle + slice / 2 - options.paddingDegrees;
+  const outerStart = getClipPathPoint(start, options.outerRadiusScale);
+  const outerCenter = getClipPathPoint(angle, options.outerRadiusScale);
+  const outerEnd = getClipPathPoint(end, options.outerRadiusScale);
+  const innerEnd = getClipPathPoint(end, options.innerRadiusScale);
+  const innerCenter = getClipPathPoint(angle, options.innerRadiusScale);
+  const innerStart = getClipPathPoint(start, options.innerRadiusScale);
 
-  return `polygon(50% 50%, ${startPoint.x}% ${startPoint.y}%, ${endPoint.x}% ${endPoint.y}%)`;
+  return `polygon(${formatClipPoint(outerStart)}, ${formatClipPoint(outerCenter)}, ${formatClipPoint(outerEnd)}, ${formatClipPoint(innerEnd)}, ${formatClipPoint(innerCenter)}, ${formatClipPoint(innerStart)})`;
 }
 
-function getClipPathPoint(angle) {
+function getClipPathPoint(angle, radiusScale) {
   const radians = (angle * Math.PI) / 180;
   return {
-    x: Number((50 + Math.cos(radians) * 50).toFixed(3)),
-    y: Number((50 + Math.sin(radians) * 50).toFixed(3))
+    x: Number((50 + Math.cos(radians) * 50 * radiusScale).toFixed(3)),
+    y: Number((50 + Math.sin(radians) * 50 * radiusScale).toFixed(3))
   };
+}
+
+function formatClipPoint(point) {
+  return `${point.x}% ${point.y}%`;
 }
 
 function getWheelLabelFontSize(lines, prizeCount, trackWidth) {

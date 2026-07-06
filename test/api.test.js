@@ -204,8 +204,11 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(styles.body, /\.wheel-label\s*{[^}]*-webkit-text-stroke:\s*0\.35px/s);
   assert.doesNotMatch(styles.body, /\.vision-heading span\s*{/);
   assert.match(script.body, /label\.length > 30 \? 3 : 2/);
-  assert.match(script.body, /wheelRadius \* \(crowded \? 0\.58 : dense \? 0\.58 : 0\.58\)/);
-  assert.match(script.body, /getWheelSegmentClipPath\(angle,\s*slice/);
+  assert.match(script.body, /wheelRadius \* \(crowded \? 0\.62 : dense \? 0\.62 : 0\.58\)/);
+  assert.match(script.body, /innerRadiusScale:\s*dense \? 0\.37 : 0\.32/);
+  assert.match(script.body, /outerRadiusScale:\s*dense \? 0\.94 : 0\.93/);
+  assert.match(script.body, /getWheelSegmentClipPath\(angle,\s*slice,\s*{/);
+  assert.doesNotMatch(script.body, /polygon\(50% 50%,/);
 
   const fallbackPrizeNames = [
     "Acceso al plan anual + 2.000€ en bonificaciones",

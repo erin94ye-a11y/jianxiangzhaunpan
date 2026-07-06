@@ -323,6 +323,7 @@ function renderWheel(prizes) {
     const label = document.createElement("div");
     label.className = "wheel-label";
     const labelMetrics = getWheelLabelMetrics(prize.name, prizes.length, angle, slice, wheelLayout);
+    label.style.setProperty("--label-clip", labelMetrics.clipPath);
     label.style.setProperty("--label-text-rotation", `${labelMetrics.textRotation}deg`);
     label.style.setProperty("--label-line-height", labelMetrics.lineHeight);
     label.classList.toggle("is-flipped", labelMetrics.isFlipped);
@@ -364,8 +365,10 @@ function getWheelLabelMetrics(name, prizeCount, angle, slice, layout) {
   const lines = getAdaptiveWheelLabelLines(name, bounds, prizeCount);
   const fontSize = getAdaptiveWheelLabelFontSize(lines, bounds);
   const lineFrames = getWheelLabelLineFrames(lines, bounds, fontSize, angle, wheelRadius);
+  const clipPath = getWheelSegmentClipPath(angle, slice, bounds);
 
   return {
+    clipPath,
     isFlipped: false,
     lineHeight: bounds.lineHeight,
     lines: lineFrames,
@@ -376,9 +379,9 @@ function getWheelLabelMetrics(name, prizeCount, angle, slice, layout) {
 function getWheelLabelBounds(prizeCount, slice, wheelRadius) {
   const crowded = prizeCount >= 9;
   const dense = prizeCount >= 7;
-  const innerRadiusScale = crowded ? 0.38 : dense ? 0.4 : 0.34;
-  const outerRadiusScale = crowded ? 0.88 : dense ? 0.91 : 0.9;
-  const paddingDegrees = crowded ? 5 : dense ? 5.2 : 3.4;
+  const innerRadiusScale = crowded ? 0.4 : dense ? 0.39 : 0.35;
+  const outerRadiusScale = crowded ? 0.86 : dense ? 0.89 : 0.88;
+  const paddingDegrees = crowded ? 7 : dense ? 6.5 : 4.5;
   const centerRadiusScale = Number(((innerRadiusScale + outerRadiusScale) / 2).toFixed(3));
   const usableAngle = Math.max(8, slice - paddingDegrees * 2);
   const radialPadding = Math.max(7, wheelRadius * 0.035);
@@ -391,8 +394,8 @@ function getWheelLabelBounds(prizeCount, slice, wheelRadius) {
     centerRadiusScale,
     innerRadiusScale,
     innerRadius,
-    lineGap: Math.max(1, Math.round(wheelRadius * 0.006)),
-    lineHeight: 0.96,
+    lineGap: 0,
+    lineHeight: 0.9,
     maxFontSize: getWheelLabelMaxFontSize(prizeCount, wheelRadius),
     outerRadiusScale,
     outerRadius,
@@ -513,6 +516,19 @@ function getWheelLabelLineCandidates(tokens, lineCount) {
   return candidates;
 }
 
+function getWheelSegmentClipPath(angle, slice, options) {
+  const start = angle - slice / 2 + options.paddingDegrees;
+  const end = angle + slice / 2 - options.paddingDegrees;
+  const outerStart = getClipPathPoint(start, options.outerRadiusScale);
+  const outerCenter = getClipPathPoint(angle, options.outerRadiusScale);
+  const outerEnd = getClipPathPoint(end, options.outerRadiusScale);
+  const innerEnd = getClipPathPoint(end, options.innerRadiusScale);
+  const innerCenter = getClipPathPoint(angle, options.innerRadiusScale);
+  const innerStart = getClipPathPoint(start, options.innerRadiusScale);
+
+  return `polygon(${formatClipPoint(outerStart)}, ${formatClipPoint(outerCenter)}, ${formatClipPoint(outerEnd)}, ${formatClipPoint(innerEnd)}, ${formatClipPoint(innerCenter)}, ${formatClipPoint(innerStart)})`;
+}
+
 function getWheelLabelLineFrames(lines, bounds, fontSize, angle, wheelRadius) {
   const radians = (angle * Math.PI) / 180;
   const lineBoxHeight = fontSize * bounds.lineHeight;
@@ -547,8 +563,20 @@ function getWheelLabelLineFrames(lines, bounds, fontSize, angle, wheelRadius) {
 
 function getWheelLabelTangentWidth(radius, bounds, fontSize = 0) {
   const halfAngleRadians = ((bounds.usableAngle / 2) * Math.PI) / 180;
-  const safetyPadding = Math.max(bounds.tangentPadding, fontSize * 0.9);
+  const safetyPadding = Math.max(bounds.tangentPadding, fontSize);
   return Math.max(24, 2 * radius * Math.sin(halfAngleRadians) - safetyPadding);
+}
+
+function getClipPathPoint(angle, radiusScale) {
+  const radians = (angle * Math.PI) / 180;
+  return {
+    x: Number((50 + Math.cos(radians) * 50 * radiusScale).toFixed(3)),
+    y: Number((50 + Math.sin(radians) * 50 * radiusScale).toFixed(3))
+  };
+}
+
+function formatClipPoint(point) {
+  return `${point.x}% ${point.y}%`;
 }
 
 function getAdaptiveWheelLabelFontSize(lines, bounds) {

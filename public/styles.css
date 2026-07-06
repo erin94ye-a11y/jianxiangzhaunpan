@@ -715,6 +715,7 @@ body.public-page {
 .public-page .entry-panel,
 .public-page .wheel-stage {
   background: linear-gradient(155deg, rgba(80, 25, 12, 0.96), rgba(45, 15, 10, 0.94));
+  background-clip: padding-box;
   border: 1px solid rgba(255, 184, 107, 0.34);
   border-radius: 28px;
   box-shadow: 0 28px 80px rgba(71, 21, 9, 0.42);
@@ -810,7 +811,9 @@ body.public-page {
 .public-page .wheel-stage {
   gap: 22px;
   min-height: 0;
+  overflow: hidden;
   padding: 26px 22px;
+  position: relative;
 }
 
 .public-page .wheel-copy {

@@ -221,6 +221,8 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(script.body, /normalizePrizeLabelName\(fullName\)/);
   assert.match(script.body, /drawWheelLabels\(prizes,\s*slice,\s*wheelLayout,\s*labelCanvas\)/);
   assert.match(script.body, /drawWheelSegmentGuides\(context,\s*prizes\.length,\s*slice,\s*layout\.wheelRadius\)/);
+  assert.match(script.body, /innerRadius\s*=\s*wheelRadius \* 0\.29/);
+  assert.match(script.body, /outerRadius\s*=\s*wheelRadius - context\.lineWidth \/ 2/);
   assert.match(script.body, /clipWheelLabelSegment\(context,\s*angle,\s*slice,\s*bounds,\s*wheelRadius\)/);
   assert.match(script.body, /context\.clip\(\)/);
   assert.match(script.body, /window\.__wheelLabelDebug/);
@@ -263,6 +265,9 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(styles.body, /\.wheel-prize-image img\s*{[^}]*object-fit:\s*cover/s);
   assert.doesNotMatch(styles.body, /\.wheel\.is-crowded \.wheel-label img/);
   assert.match(styles.body, /\.public-page \.topbar\s*{[^}]*position:\s*fixed/s);
+  assert.match(styles.body, /\.public-page \.entry-panel,\s*\.public-page \.wheel-stage\s*{[^}]*background-clip:\s*padding-box/s);
+  assert.match(styles.body, /\.public-page \.wheel-stage\s*{[^}]*overflow:\s*hidden/s);
+  assert.match(styles.body, /\.public-page \.wheel-stage\s*{[^}]*position:\s*relative/s);
   assert.match(styles.body, /\.brand-lockup\s*{[^}]*grid-template-columns:\s*auto auto minmax\(0,\s*auto\)/s);
   assert.match(styles.body, /\.brand-text\s*{[^}]*font-size:\s*var\(--brand-text-size\)/s);
   assert.match(styles.body, /\.brand-text\s*{[^}]*white-space:\s*nowrap/s);

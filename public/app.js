@@ -407,12 +407,12 @@ function drawWheelSegmentGuides(context, prizeCount, slice, wheelRadius) {
   context.strokeStyle = "rgba(255, 247, 214, 0.62)";
   context.lineWidth = Math.max(1.4, wheelRadius * 0.012);
   context.lineCap = "round";
+  const innerRadius = wheelRadius * 0.29;
+  const outerRadius = wheelRadius - context.lineWidth / 2;
 
   for (let index = 0; index < prizeCount; index += 1) {
     const angle = -90 + index * slice;
     const radians = (angle * Math.PI) / 180;
-    const innerRadius = wheelRadius * 0.34;
-    const outerRadius = wheelRadius * 0.96;
 
     context.beginPath();
     context.moveTo(Math.cos(radians) * innerRadius, Math.sin(radians) * innerRadius);

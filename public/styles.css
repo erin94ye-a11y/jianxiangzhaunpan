@@ -568,15 +568,14 @@ button.danger:hover {
 
 .wheel-label {
   -webkit-text-stroke: 0.35px rgba(74, 18, 6, 0.86);
-  clip-path: var(--label-clip);
   color: #fff7d6;
   display: block;
-  font-size: var(--label-font-size, 15px);
   font-weight: 900;
   inset: 0;
   line-height: var(--label-line-height, 0.98);
-  overflow: hidden;
+  overflow: visible;
   paint-order: stroke fill;
+  pointer-events: none;
   position: absolute;
   text-align: center;
   text-shadow:
@@ -592,17 +591,7 @@ button.danger:hover {
 }
 
 .wheel-label-text {
-  align-content: center;
-  display: grid;
-  gap: var(--label-line-gap, 1px);
-  height: var(--label-height);
-  justify-items: center;
-  left: var(--label-x);
-  min-width: 0;
-  position: absolute;
-  top: var(--label-y);
-  transform: translate(-50%, -50%) rotate(var(--label-text-rotation));
-  width: var(--label-width);
+  display: contents;
 }
 
 .wheel-label.is-flipped .wheel-label-text {
@@ -611,10 +600,16 @@ button.danger:hover {
 
 .wheel-label-line {
   display: block;
+  font-size: var(--line-font-size);
+  left: var(--line-x);
   max-width: 100%;
   overflow: hidden;
+  position: absolute;
   text-overflow: clip;
+  top: var(--line-y);
+  transform: translate(-50%, -50%) rotate(var(--label-text-rotation));
   white-space: nowrap;
+  width: var(--line-width);
   word-break: keep-all;
 }
 

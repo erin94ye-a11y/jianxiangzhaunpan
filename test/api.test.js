@@ -216,12 +216,13 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(script.body, /Ingresa tu código\./);
   assert.match(script.body, /Código verificado\. Tu giro está listo\./);
   assert.doesNotMatch(script.body, /Please enter your code\./);
-  assert.match(script.body, /--label-width/);
-  assert.match(script.body, /--label-x/);
-  assert.match(script.body, /--label-y/);
-  assert.match(script.body, /--label-clip/);
-  assert.match(script.body, /getWheelLabelLines/);
+  assert.match(script.body, /--line-x/);
+  assert.match(script.body, /--line-y/);
+  assert.match(script.body, /--line-width/);
+  assert.match(script.body, /--line-font-size/);
+  assert.match(script.body, /--label-text-rotation/);
   assert.match(script.body, /getWheelLayout/);
+  assert.match(script.body, /wheel\.clientWidth \|\| wheelRect\.width/);
   assert.match(script.body, /getWheelLabelMetrics/);
   assert.match(script.body, /getWheelImageMetrics/);
   assert.match(script.body, /wheel-prize-image/);
@@ -242,13 +243,12 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
     headers: { accept: "text/css" }
   });
   assert.equal(styles.status, 200);
-  assert.match(styles.body, /clip-path:\s*var\(--label-clip\)/);
-  assert.match(styles.body, /left:\s*var\(--label-x\)/);
-  assert.match(styles.body, /top:\s*var\(--label-y\)/);
+  assert.match(styles.body, /display:\s*contents/);
   assert.match(styles.body, /--label-text-rotation/);
-  assert.match(styles.body, /width:\s*var\(--label-width\)/);
-  assert.match(styles.body, /height:\s*var\(--label-height\)/);
-  assert.match(styles.body, /gap:\s*var\(--label-line-gap,\s*1px\)/);
+  assert.match(styles.body, /left:\s*var\(--line-x\)/);
+  assert.match(styles.body, /top:\s*var\(--line-y\)/);
+  assert.match(styles.body, /width:\s*var\(--line-width\)/);
+  assert.match(styles.body, /font-size:\s*var\(--line-font-size\)/);
   assert.match(styles.body, /line-height:\s*var\(--label-line-height,\s*0\.98\)/);
   assert.match(styles.body, /\.wheel-label-line/);
   assert.match(styles.body, /\.wheel-prize-image\s*{[^}]*height:\s*var\(--wheel-image-size\)/s);
@@ -276,16 +276,21 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(styles.body, /\.vision-panel h2\s*{[^}]*font-size:\s*clamp\(26px,\s*7vw,\s*42px\)/s);
   assert.match(styles.body, /\.vision-copy\s*{[^}]*line-height:\s*1\.72/s);
   assert.match(styles.body, /\.wheel-label\s*{[^}]*color:\s*#fff7d6/s);
-  assert.match(styles.body, /\.wheel-label\s*{[^}]*clip-path:\s*var\(--label-clip\)/s);
+  assert.doesNotMatch(styles.body, /clip-path:\s*var\(--label-clip\)/);
   assert.match(styles.body, /\.wheel-label\s*{[^}]*-webkit-text-stroke:\s*0\.35px/s);
   assert.doesNotMatch(styles.body, /\.vision-heading span\s*{/);
   assert.match(script.body, /const labelMetrics = getWheelLabelMetrics\(prize\.name/);
   assert.match(script.body, /const lines = getAdaptiveWheelLabelLines\(name,\s*bounds,\s*prizeCount\)/);
   assert.match(script.body, /getAdaptiveWheelLabelFontSize\(lines,\s*bounds\)/);
+  assert.match(script.body, /getWheelLabelLineFrames\(lines,\s*bounds,\s*fontSize,\s*angle,\s*wheelRadius\)/);
+  assert.match(script.body, /getWheelLabelTangentWidth\(radius,\s*bounds,\s*fontSize/);
   assert.match(script.body, /measureWheelLabelText\(line,\s*fontSize\)/);
-  assert.match(script.body, /innerRadiusScale\s*=\s*crowded \? 0\.31 : dense \? 0\.29 : 0\.27/);
+  assert.match(script.body, /textRotation:\s*getRadialWheelLabelRotation\(angle\)/);
+  assert.match(script.body, /baseRotation\s*=\s*angle - 90/);
+  assert.match(script.body, /radialLength\s*=\s*Math\.max/);
+  assert.match(script.body, /innerRadiusScale\s*=\s*crowded \? 0\.38 : dense \? 0\.4 : 0\.34/);
   assert.match(script.body, /maxFontSize:\s*getWheelLabelMaxFontSize\(prizeCount,\s*wheelRadius\)/);
-  assert.match(script.body, /getWheelSegmentClipPath\(angle,\s*slice,\s*bounds\)/);
+  assert.doesNotMatch(script.body, /--label-clip/);
   assert.doesNotMatch(script.body, /polygon\(50% 50%,/);
 
   const fallbackPrizeNames = [

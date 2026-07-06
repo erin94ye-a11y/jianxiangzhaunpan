@@ -322,19 +322,21 @@ function renderWheel(prizes) {
 
     const label = document.createElement("div");
     label.className = "wheel-label";
-    const nameLines = getWheelLabelLines(prize.name, prizes.length);
-    const labelMetrics = getWheelLabelMetrics(nameLines, prizes.length, angle, slice, wheelLayout);
+    const labelMetrics = getWheelLabelMetrics(prize.name, prizes.length, angle, slice, wheelLayout);
     label.style.setProperty("--label-width", `${labelMetrics.width}px`);
+    label.style.setProperty("--label-height", `${labelMetrics.height}px`);
     label.style.setProperty("--label-x", `${labelMetrics.x}px`);
     label.style.setProperty("--label-y", `${labelMetrics.y}px`);
     label.style.setProperty("--label-clip", labelMetrics.clipPath);
     label.style.setProperty("--label-text-rotation", `${labelMetrics.textRotation}deg`);
     label.style.setProperty("--label-font-size", `${labelMetrics.fontSize}px`);
+    label.style.setProperty("--label-line-gap", `${labelMetrics.lineGap}px`);
+    label.style.setProperty("--label-line-height", labelMetrics.lineHeight);
     label.classList.toggle("is-flipped", labelMetrics.isFlipped);
 
     const name = document.createElement("span");
     name.className = "wheel-label-text";
-    for (const line of nameLines) {
+    for (const line of labelMetrics.lines) {
       const lineNode = document.createElement("span");
       lineNode.className = "wheel-label-line";
       lineNode.textContent = line;
@@ -355,77 +357,161 @@ function getWheelLayout() {
   };
 }
 
-function getWheelLabelLines(name, prizeCount) {
-  const label = String(name || "").trim() || "Premio";
-  const words = label.split(/\s+/).filter(Boolean);
-  const dense = prizeCount >= 7;
-  if (label.length <= (dense ? 12 : 18) || words.length <= 1) {
-    return [label];
-  }
+const WHEEL_LABEL_FONT_FAMILY =
+  "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif";
+let wheelLabelMeasureContext = null;
 
-  const maxLines = dense ? (label.length > 30 ? 3 : 2) : 2;
-
-  return balanceLabelLines(words, maxLines);
-}
-
-function balanceLabelLines(words, maxLines) {
-  const lineCount = Math.min(maxLines, words.length);
-  const lines = [];
-  let startIndex = 0;
-
-  for (let lineIndex = 0; lineIndex < lineCount; lineIndex += 1) {
-    const remainingLines = lineCount - lineIndex;
-    if (remainingLines === 1) {
-      lines.push(words.slice(startIndex).join(" "));
-      break;
-    }
-
-    const remainingText = words.slice(startIndex).join(" ");
-    const targetLength = Math.ceil(remainingText.length / remainingLines);
-    let endIndex = startIndex + 1;
-    const latestEndIndex = words.length - (remainingLines - 1);
-
-    while (endIndex < latestEndIndex) {
-      const currentLine = words.slice(startIndex, endIndex).join(" ");
-      const nextLine = words.slice(startIndex, endIndex + 1).join(" ");
-      if (currentLine && nextLine.length > targetLength) {
-        break;
-      }
-      endIndex += 1;
-    }
-
-    lines.push(words.slice(startIndex, endIndex).join(" "));
-    startIndex = endIndex;
-  }
-
-  return lines.filter(Boolean);
-}
-
-function getWheelLabelMetrics(lines, prizeCount, angle, slice, layout) {
+function getWheelLabelMetrics(name, prizeCount, angle, slice, layout) {
   const wheelRadius = layout.wheelRadius;
-  const crowded = prizeCount >= 9;
-  const dense = prizeCount >= 7;
-  const labelRadius = Math.round(wheelRadius * (crowded ? 0.62 : dense ? 0.62 : 0.58));
-  const labelWidth = Math.round(Math.min(wheelRadius * (dense ? 0.46 : 0.54), dense ? 82 : 110));
-  const fontSize = getWheelLabelFontSize(lines, prizeCount, labelWidth);
+  const bounds = getWheelLabelBounds(prizeCount, slice, wheelRadius);
+  const lines = getAdaptiveWheelLabelLines(name, bounds, prizeCount);
+  const fontSize = getAdaptiveWheelLabelFontSize(lines, bounds);
+  const labelRadius = Math.round(wheelRadius * bounds.centerRadiusScale);
   const radians = (angle * Math.PI) / 180;
-  const clipPath = getWheelSegmentClipPath(angle, slice, {
-    innerRadiusScale: dense ? 0.37 : 0.32,
-    outerRadiusScale: dense ? 0.94 : 0.93,
-    paddingDegrees: dense ? 2 : 1.5
-  });
+  const clipPath = getWheelSegmentClipPath(angle, slice, bounds);
   const normalizedAngle = normalizeDegrees(angle);
   const isFlipped = normalizedAngle > 90 && normalizedAngle < 270;
 
   return {
     clipPath,
     fontSize,
+    height: Math.round(bounds.height),
     isFlipped,
+    lineGap: bounds.lineGap,
+    lineHeight: bounds.lineHeight,
+    lines,
     textRotation: Number((isFlipped ? angle + 180 : angle).toFixed(3)),
-    width: labelWidth,
+    width: Math.round(bounds.width),
     x: Math.round(wheelRadius + Math.cos(radians) * labelRadius),
     y: Math.round(wheelRadius + Math.sin(radians) * labelRadius)
   };
+}
+
+function getWheelLabelBounds(prizeCount, slice, wheelRadius) {
+  const crowded = prizeCount >= 9;
+  const dense = prizeCount >= 7;
+  const innerRadiusScale = crowded ? 0.31 : dense ? 0.29 : 0.27;
+  const outerRadiusScale = crowded ? 0.9 : dense ? 0.92 : 0.91;
+  const paddingDegrees = crowded ? 2.8 : dense ? 2.6 : 2;
+  const centerRadiusScale = Number(((innerRadiusScale + outerRadiusScale) / 2).toFixed(3));
+  const usableAngle = Math.max(8, slice - paddingDegrees * 2);
+  const radialPadding = Math.max(7, wheelRadius * 0.035);
+  const tangentPadding = Math.max(4, wheelRadius * 0.02);
+  const width = Math.max(54, (outerRadiusScale - innerRadiusScale) * wheelRadius - radialPadding);
+  const height = Math.max(
+    36,
+    2 * wheelRadius * centerRadiusScale * Math.sin(((usableAngle / 2) * Math.PI) / 180) - tangentPadding
+  );
+
+  return {
+    centerRadiusScale,
+    height,
+    innerRadiusScale,
+    lineGap: Math.max(1, Math.round(wheelRadius * 0.006)),
+    lineHeight: 0.96,
+    maxFontSize: getWheelLabelMaxFontSize(prizeCount, wheelRadius),
+    outerRadiusScale,
+    paddingDegrees,
+    width
+  };
+}
+
+function getWheelLabelMaxFontSize(prizeCount, wheelRadius) {
+  if (prizeCount >= 9) {
+    return clamp(wheelRadius * 0.066, 10, 13);
+  }
+
+  if (prizeCount >= 7) {
+    return clamp(wheelRadius * 0.076, 12, 15.5);
+  }
+
+  return clamp(wheelRadius * 0.09, 16, 22);
+}
+
+function getAdaptiveWheelLabelLines(name, bounds, prizeCount) {
+  const label = String(name || "").trim() || "Premio";
+  const tokens = getWheelLabelTokens(label);
+  if (tokens.length <= 1) {
+    return [label];
+  }
+
+  const maxLines = Math.min(tokens.length, prizeCount >= 7 ? 4 : 3);
+  let bestCandidate = null;
+
+  for (let lineCount = 1; lineCount <= maxLines; lineCount += 1) {
+    for (const lines of getWheelLabelLineCandidates(tokens, lineCount)) {
+      const fontSize = getAdaptiveWheelLabelFontSize(lines, bounds);
+      const measuredWidths = lines.map((line) => measureWheelLabelText(line, fontSize));
+      const widestLine = Math.max(...measuredWidths);
+      const narrowestLine = Math.min(...measuredWidths);
+      const balancePenalty = ((widestLine - narrowestLine) / Math.max(1, bounds.width)) * 0.35;
+      const score = fontSize - balancePenalty - lineCount * 0.04;
+
+      if (
+        !bestCandidate ||
+        score > bestCandidate.score ||
+        (Math.abs(score - bestCandidate.score) < 0.05 && lineCount < bestCandidate.lines.length)
+      ) {
+        bestCandidate = {
+          lines,
+          score
+        };
+      }
+    }
+  }
+
+  return bestCandidate?.lines || [label];
+}
+
+function getWheelLabelTokens(label) {
+  const rawTokens = label.split(/\s+/).filter(Boolean);
+  const tokens = [];
+  let groupedTokens = [];
+
+  for (const token of rawTokens) {
+    if (groupedTokens.length > 0) {
+      groupedTokens.push(token);
+      if (token.endsWith(")")) {
+        tokens.push(groupedTokens.join(" "));
+        groupedTokens = [];
+      }
+      continue;
+    }
+
+    if (token.startsWith("(") && !token.endsWith(")")) {
+      groupedTokens = [token];
+      continue;
+    }
+
+    tokens.push(token);
+  }
+
+  if (groupedTokens.length > 0) {
+    tokens.push(groupedTokens.join(" "));
+  }
+
+  return tokens;
+}
+
+function getWheelLabelLineCandidates(tokens, lineCount) {
+  const candidates = [];
+
+  function buildLines(startIndex, currentLines) {
+    const remainingLines = lineCount - currentLines.length;
+    if (remainingLines === 1) {
+      candidates.push([...currentLines, tokens.slice(startIndex).join(" ")]);
+      return;
+    }
+
+    const latestEndIndex = tokens.length - remainingLines + 1;
+    for (let endIndex = startIndex + 1; endIndex <= latestEndIndex; endIndex += 1) {
+      buildLines(endIndex, [...currentLines, tokens.slice(startIndex, endIndex).join(" ")]);
+    }
+  }
+
+  buildLines(0, []);
+
+  return candidates;
 }
 
 function getWheelSegmentClipPath(angle, slice, options) {
@@ -453,23 +539,48 @@ function formatClipPoint(point) {
   return `${point.x}% ${point.y}%`;
 }
 
-function getWheelLabelFontSize(lines, prizeCount, trackWidth) {
-  const length = lines.join("").length;
-  const longestLine = Math.max(...lines.map((line) => line.length));
-  const maxByTrack = (trackWidth - 4) / Math.max(1, longestLine * 0.56);
-  const minimumSize = prizeCount >= 9 ? 6.6 : prizeCount >= 7 ? 6.8 : 12;
-  const maximumSize = prizeCount >= 9 ? 10 : prizeCount >= 7 ? 11 : 18;
-  let preferredSize = maximumSize;
+function getAdaptiveWheelLabelFontSize(lines, bounds) {
+  let low = 6.5;
+  let high = bounds.maxFontSize;
 
-  if (prizeCount >= 9) {
-    preferredSize = length > 30 ? 7.2 : 8.6;
-  } else if (prizeCount >= 7) {
-    preferredSize = length > 36 ? 7.8 : length > 22 ? 8.6 : 9.6;
-  } else {
-    preferredSize = length > 18 ? 14 : 17;
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const middle = (low + high) / 2;
+    if (doesWheelLabelFit(lines, bounds, middle)) {
+      low = middle;
+    } else {
+      high = middle;
+    }
   }
 
-  return Number(Math.max(minimumSize, Math.min(preferredSize, maximumSize, maxByTrack)).toFixed(2));
+  return Number(low.toFixed(2));
+}
+
+function doesWheelLabelFit(lines, bounds, fontSize) {
+  const widestLine = Math.max(...lines.map((line) => measureWheelLabelText(line, fontSize)));
+  const textHeight = lines.length * fontSize * bounds.lineHeight + Math.max(0, lines.length - 1) * bounds.lineGap;
+
+  return widestLine <= bounds.width && textHeight <= bounds.height;
+}
+
+function measureWheelLabelText(text, fontSize) {
+  const context = getWheelLabelMeasureContext();
+  if (!context) {
+    return text.length * fontSize * 0.58;
+  }
+
+  context.font = `900 ${fontSize}px ${WHEEL_LABEL_FONT_FAMILY}`;
+  return context.measureText(text).width;
+}
+
+function getWheelLabelMeasureContext() {
+  if (wheelLabelMeasureContext) {
+    return wheelLabelMeasureContext;
+  }
+
+  const canvas = document.createElement("canvas");
+  wheelLabelMeasureContext = canvas.getContext("2d");
+
+  return wheelLabelMeasureContext;
 }
 
 function getWheelImageMetrics(prizeCount, angle, layout) {

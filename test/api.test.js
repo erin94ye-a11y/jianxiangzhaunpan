@@ -174,6 +174,9 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(styles.body, /top:\s*var\(--label-y\)/);
   assert.match(styles.body, /--label-text-rotation/);
   assert.match(styles.body, /width:\s*var\(--label-width\)/);
+  assert.match(styles.body, /height:\s*var\(--label-height\)/);
+  assert.match(styles.body, /gap:\s*var\(--label-line-gap,\s*1px\)/);
+  assert.match(styles.body, /line-height:\s*var\(--label-line-height,\s*0\.98\)/);
   assert.match(styles.body, /\.wheel-label-line/);
   assert.match(styles.body, /\.wheel-prize-image\s*{[^}]*height:\s*var\(--wheel-image-size\)/s);
   assert.match(styles.body, /\.wheel-prize-image\s*{[^}]*width:\s*var\(--wheel-image-size\)/s);
@@ -203,11 +206,13 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(styles.body, /\.wheel-label\s*{[^}]*clip-path:\s*var\(--label-clip\)/s);
   assert.match(styles.body, /\.wheel-label\s*{[^}]*-webkit-text-stroke:\s*0\.35px/s);
   assert.doesNotMatch(styles.body, /\.vision-heading span\s*{/);
-  assert.match(script.body, /label\.length > 30 \? 3 : 2/);
-  assert.match(script.body, /wheelRadius \* \(crowded \? 0\.62 : dense \? 0\.62 : 0\.58\)/);
-  assert.match(script.body, /innerRadiusScale:\s*dense \? 0\.37 : 0\.32/);
-  assert.match(script.body, /outerRadiusScale:\s*dense \? 0\.94 : 0\.93/);
-  assert.match(script.body, /getWheelSegmentClipPath\(angle,\s*slice,\s*{/);
+  assert.match(script.body, /const labelMetrics = getWheelLabelMetrics\(prize\.name/);
+  assert.match(script.body, /const lines = getAdaptiveWheelLabelLines\(name,\s*bounds,\s*prizeCount\)/);
+  assert.match(script.body, /getAdaptiveWheelLabelFontSize\(lines,\s*bounds\)/);
+  assert.match(script.body, /measureWheelLabelText\(line,\s*fontSize\)/);
+  assert.match(script.body, /innerRadiusScale\s*=\s*crowded \? 0\.31 : dense \? 0\.29 : 0\.27/);
+  assert.match(script.body, /maxFontSize:\s*getWheelLabelMaxFontSize\(prizeCount,\s*wheelRadius\)/);
+  assert.match(script.body, /getWheelSegmentClipPath\(angle,\s*slice,\s*bounds\)/);
   assert.doesNotMatch(script.body, /polygon\(50% 50%,/);
 
   const fallbackPrizeNames = [

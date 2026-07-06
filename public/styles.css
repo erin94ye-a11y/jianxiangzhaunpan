@@ -574,7 +574,7 @@ button.danger:hover {
   font-size: var(--label-font-size, 15px);
   font-weight: 900;
   inset: 0;
-  line-height: 0.98;
+  line-height: var(--label-line-height, 0.98);
   overflow: hidden;
   paint-order: stroke fill;
   position: absolute;
@@ -592,11 +592,13 @@ button.danger:hover {
 }
 
 .wheel-label-text {
+  align-content: center;
   display: grid;
-  gap: 1px;
+  gap: var(--label-line-gap, 1px);
+  height: var(--label-height);
+  justify-items: center;
   left: var(--label-x);
   min-width: 0;
-  place-items: center;
   position: absolute;
   top: var(--label-y);
   transform: translate(-50%, -50%) rotate(var(--label-text-rotation));

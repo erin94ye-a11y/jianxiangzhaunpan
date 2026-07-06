@@ -23,6 +23,17 @@ const segmentColors = [
 ];
 
 const VISITOR_TOKEN_STORAGE_KEY = "jump_quantum_visitor_token";
+const DEFAULT_WHEEL_LABELS = new Map(
+  [
+    ["Acceso al plan anual + 2.000€ en bonificaciones", "Plan anual + 2.000€"],
+    ["iPhone 17 Pro Max", "iPhone 17 Pro Max"],
+    ["Lingote de oro de inversión de 5g", "Lingote de oro 5g"],
+    ["Cafetera Cecotec", "Cafetera Cecotec"],
+    ["Libro de formación sobre inversión (a elegir)", "Libro de formación"],
+    ["Selección de acciones de alta calidad", "Selección de acciones"],
+    ["Gracias por participar", "Gracias por participar"]
+  ].map(([name, label]) => [normalizePrizeLabelName(name), label])
+);
 
 let activeCampaign = null;
 let currentRotation = 0;
@@ -355,11 +366,13 @@ function drawWheelLabels(prizes, slice, layout, canvas) {
   canvas.height = Math.round(wheelSize * pixelRatio);
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   context.clearRect(0, 0, wheelSize, wheelSize);
+  drawWheelSegmentGuides(context, prizes.length, slice, layout.wheelRadius);
 
   const debugLabels = [];
   prizes.forEach((prize, index) => {
     const angle = index * slice + slice / 2 - 90;
-    const labelMetrics = getWheelLabelMetrics(prize.name, prizes.length, angle, slice, layout);
+    const labelText = getWheelPrizeLabel(prize);
+    const labelMetrics = getWheelLabelMetrics(labelText, prizes.length, angle, slice, layout);
     drawWheelLabel(context, labelMetrics);
     debugLabels.push({
       angle: labelMetrics.angle,
@@ -367,7 +380,14 @@ function drawWheelLabels(prizes, slice, layout, canvas) {
       fontSize: labelMetrics.fontSize,
       labelHeight: Number(labelMetrics.bounds.labelHeight.toFixed(2)),
       labelWidth: Number(labelMetrics.bounds.labelWidth.toFixed(2)),
-      lines: labelMetrics.lines,
+      lines: labelMetrics.lineFrames.map((line) => ({
+        maxWidth: Number(line.maxWidth.toFixed(2)),
+        radius: Number(line.radius.toFixed(2)),
+        text: line.text,
+        width: Number(line.measuredWidth.toFixed(2))
+      })),
+      label: labelText,
+      maxLineOverflow: Number(labelMetrics.maxLineOverflow.toFixed(2)),
       prize: prize.name
     });
   });
@@ -377,7 +397,48 @@ function drawWheelLabels(prizes, slice, layout, canvas) {
   canvas.dataset.maxBlockRatio = String(
     Math.max(...debugLabels.map((item) => item.blockHeight / Math.max(1, item.labelHeight))).toFixed(3)
   );
+  canvas.dataset.maxLineOverflow = String(Math.max(...debugLabels.map((item) => item.maxLineOverflow)).toFixed(2));
   window.__wheelLabelDebug = debugLabels;
+}
+
+function drawWheelSegmentGuides(context, prizeCount, slice, wheelRadius) {
+  context.save();
+  context.translate(wheelRadius, wheelRadius);
+  context.strokeStyle = "rgba(255, 247, 214, 0.62)";
+  context.lineWidth = Math.max(1.4, wheelRadius * 0.012);
+  context.lineCap = "round";
+
+  for (let index = 0; index < prizeCount; index += 1) {
+    const angle = -90 + index * slice;
+    const radians = (angle * Math.PI) / 180;
+    const innerRadius = wheelRadius * 0.34;
+    const outerRadius = wheelRadius * 0.96;
+
+    context.beginPath();
+    context.moveTo(Math.cos(radians) * innerRadius, Math.sin(radians) * innerRadius);
+    context.lineTo(Math.cos(radians) * outerRadius, Math.sin(radians) * outerRadius);
+    context.stroke();
+  }
+
+  context.restore();
+}
+
+function getWheelPrizeLabel(prize) {
+  const explicitLabel = String(prize.wheel_label || prize.wheelLabel || prize.short_name || "").trim();
+  if (explicitLabel) {
+    return explicitLabel;
+  }
+
+  const fullName = String(prize.name || "Premio").trim();
+  return DEFAULT_WHEEL_LABELS.get(normalizePrizeLabelName(fullName)) || fullName;
+}
+
+function normalizePrizeLabelName(value) {
+  return String(value || "")
+    .normalize("NFC")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 }
 
 function getWheelLabelMetrics(name, prizeCount, angle, slice, layout) {
@@ -385,10 +446,17 @@ function getWheelLabelMetrics(name, prizeCount, angle, slice, layout) {
   const bounds = getWheelLabelBounds(prizeCount, slice, wheelRadius);
   const lines = getAdaptiveWheelLabelLines(name, bounds, prizeCount);
   const fontSize = getAdaptiveWheelLabelFontSize(lines, bounds);
-  const lineHeightPx = fontSize * bounds.lineHeight;
-  const blockHeight = lines.length * lineHeightPx + Math.max(0, lines.length - 1) * bounds.lineGap;
+  const lineFrames = getWheelLabelLineFrames(lines, bounds, fontSize);
+  const blockHeight =
+    lineFrames.length > 1
+      ? Math.abs(lineFrames[0].y - lineFrames[lineFrames.length - 1].y) + fontSize * bounds.lineHeight
+      : fontSize * bounds.lineHeight;
   const labelRadius = bounds.centerRadius;
   const radians = (angle * Math.PI) / 180;
+  const maxLineOverflow = Math.max(
+    0,
+    ...lineFrames.map((line) => line.measuredWidth - line.maxWidth)
+  );
 
   return {
     angle,
@@ -396,8 +464,9 @@ function getWheelLabelMetrics(name, prizeCount, angle, slice, layout) {
     bounds,
     fontSize,
     labelRadius,
-    lineHeightPx,
+    lineFrames,
     lines,
+    maxLineOverflow,
     slice,
     textRotation: getRadialWheelLabelRotation(angle),
     wheelRadius,
@@ -409,17 +478,17 @@ function getWheelLabelMetrics(name, prizeCount, angle, slice, layout) {
 function getWheelLabelBounds(prizeCount, slice, wheelRadius) {
   const crowded = prizeCount >= 9;
   const dense = prizeCount >= 7;
-  const innerRadiusScale = crowded ? 0.42 : dense ? 0.4 : 0.36;
-  const outerRadiusScale = crowded ? 0.85 : dense ? 0.87 : 0.88;
-  const paddingDegrees = crowded ? 8 : dense ? 7.5 : 5;
+  const innerRadiusScale = crowded ? 0.48 : dense ? 0.46 : 0.38;
+  const outerRadiusScale = crowded ? 0.86 : dense ? 0.9 : 0.9;
+  const paddingDegrees = crowded ? 9 : dense ? 8.5 : 5.5;
   const usableAngle = Math.max(8, slice - paddingDegrees * 2);
   const radialPadding = Math.max(7, wheelRadius * 0.035);
-  const tangentPadding = Math.max(8, wheelRadius * 0.052);
+  const tangentPadding = Math.max(9, wheelRadius * 0.06);
   const innerRadius = innerRadiusScale * wheelRadius + radialPadding / 2;
   const outerRadius = outerRadiusScale * wheelRadius - radialPadding / 2;
   const radialLength = Math.max(44, outerRadius - innerRadius);
   const centerRadius = (innerRadius + outerRadius) / 2;
-  const labelHeight = Math.max(36, radialLength * 0.76);
+  const labelHeight = Math.max(36, radialLength * 0.88);
   const labelWidth = Math.max(
     30,
     2 * centerRadius * Math.sin(((usableAngle / 2) * Math.PI) / 180) - tangentPadding
@@ -445,8 +514,7 @@ function getWheelLabelBounds(prizeCount, slice, wheelRadius) {
 }
 
 function drawWheelLabel(context, metrics) {
-  const { angle, blockHeight, bounds, fontSize, lineHeightPx, lines, slice, textRotation, wheelRadius, x, y } = metrics;
-  const firstLineY = -blockHeight / 2 + lineHeightPx / 2;
+  const { angle, bounds, fontSize, lineFrames, slice, textRotation, wheelRadius, x, y } = metrics;
 
   context.save();
   clipWheelLabelSegment(context, angle, slice, bounds, wheelRadius);
@@ -458,21 +526,20 @@ function drawWheelLabel(context, metrics) {
   context.lineJoin = "round";
   context.miterLimit = 2;
 
-  lines.forEach((line, index) => {
-    const lineY = firstLineY + index * (lineHeightPx + bounds.lineGap);
+  lineFrames.forEach((line) => {
     context.save();
     context.shadowColor = "rgba(74, 18, 6, 0.5)";
     context.shadowBlur = 3;
     context.shadowOffsetY = 1;
     context.fillStyle = "#fff7d6";
-    context.fillText(line, 0, lineY, bounds.labelWidth);
+    context.fillText(line.text, 0, line.y, line.maxWidth);
     context.restore();
 
     context.lineWidth = Math.max(1.2, fontSize * 0.14);
     context.strokeStyle = "rgba(74, 18, 6, 0.86)";
-    context.strokeText(line, 0, lineY, bounds.labelWidth);
+    context.strokeText(line.text, 0, line.y, line.maxWidth);
     context.fillStyle = "#fff7d6";
-    context.fillText(line, 0, lineY, bounds.labelWidth);
+    context.fillText(line.text, 0, line.y, line.maxWidth);
   });
 
   context.restore();
@@ -527,17 +594,20 @@ function getAdaptiveWheelLabelLines(name, bounds, prizeCount) {
     return [label];
   }
 
-  const maxLines = Math.min(tokens.length, prizeCount >= 7 ? 5 : 3);
+  const maxLines = Math.min(tokens.length, prizeCount >= 7 ? 6 : 3);
   let bestCandidate = null;
 
   for (let lineCount = 1; lineCount <= maxLines; lineCount += 1) {
     for (const lines of getWheelLabelLineCandidates(tokens, lineCount)) {
       const fontSize = getAdaptiveWheelLabelFontSize(lines, bounds);
       const measuredWidths = lines.map((line) => measureWheelLabelText(line, fontSize));
+      const lineFrames = getWheelLabelLineFrames(lines, bounds, fontSize);
       const widestLine = Math.max(...measuredWidths);
       const narrowestLine = Math.min(...measuredWidths);
+      const maxOverflow = Math.max(0, ...lineFrames.map((line) => line.measuredWidth - line.maxWidth));
       const balancePenalty = ((widestLine - narrowestLine) / Math.max(1, bounds.labelWidth)) * 0.2;
-      const score = fontSize - balancePenalty - lineCount * 0.06;
+      const overflowPenalty = maxOverflow / Math.max(1, bounds.labelWidth);
+      const score = fontSize - balancePenalty - overflowPenalty - lineCount * 0.04;
 
       if (
         !bestCandidate ||
@@ -615,6 +685,53 @@ function getWheelLabelLineCandidates(tokens, lineCount) {
   return candidates;
 }
 
+function getWheelLabelLineFrames(lines, bounds, fontSize) {
+  const lineHeightPx = fontSize * bounds.lineHeight;
+  const step = lineHeightPx + bounds.lineGap;
+  const blockHeight = lines.length * lineHeightPx + Math.max(0, lines.length - 1) * bounds.lineGap;
+  const minRadius = bounds.innerRadius + lineHeightPx * 0.58;
+  const maxRadius = bounds.outerRadius - lineHeightPx * 0.58;
+  let firstLineY = -blockHeight / 2 + lineHeightPx / 2;
+  let firstRadius = bounds.centerRadius + firstLineY;
+  let lastRadius = firstRadius + Math.max(0, lines.length - 1) * step;
+
+  if (firstRadius < minRadius) {
+    firstLineY += minRadius - firstRadius;
+  }
+
+  firstRadius = bounds.centerRadius + firstLineY;
+  lastRadius = firstRadius + Math.max(0, lines.length - 1) * step;
+  if (lastRadius > maxRadius) {
+    firstLineY -= lastRadius - maxRadius;
+  }
+
+  return lines.map((text, index) => {
+    const y = firstLineY + index * step;
+    const radius = bounds.centerRadius + y;
+    const line = {
+      radius,
+      text,
+      y
+    };
+    const maxWidth = getWheelLabelTangentWidth(line.radius, bounds, fontSize, lineHeightPx);
+
+    return {
+      fitsRadius: radius >= minRadius && radius <= maxRadius,
+      maxWidth,
+      measuredWidth: measureWheelLabelText(text, fontSize),
+      ...line
+    };
+  });
+}
+
+function getWheelLabelTangentWidth(radius, bounds, fontSize, lineHeightPx = fontSize * bounds.lineHeight) {
+  const halfAngleRadians = ((bounds.usableAngle / 2) * Math.PI) / 180;
+  const innerEdgeRadius = clamp(radius - lineHeightPx * 0.52, bounds.innerRadius, bounds.outerRadius);
+  const safetyPadding = Math.max(bounds.tangentPadding, fontSize * 1.05);
+
+  return Math.max(18, 2 * innerEdgeRadius * Math.sin(halfAngleRadians) - safetyPadding);
+}
+
 function getCanvasPoint(angle, radius) {
   const radians = (angle * Math.PI) / 180;
   return {
@@ -624,7 +741,7 @@ function getCanvasPoint(angle, radius) {
 }
 
 function getAdaptiveWheelLabelFontSize(lines, bounds) {
-  let low = 7.8;
+  let low = 8.4;
   let high = bounds.maxFontSize;
 
   for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -640,10 +757,14 @@ function getAdaptiveWheelLabelFontSize(lines, bounds) {
 }
 
 function doesWheelLabelFit(lines, bounds, fontSize) {
+  const lineFrames = getWheelLabelLineFrames(lines, bounds, fontSize);
   const textHeight = lines.length * fontSize * bounds.lineHeight + Math.max(0, lines.length - 1) * bounds.lineGap;
-  const widestLine = Math.max(...lines.map((line) => measureWheelLabelText(line, fontSize)));
+  const fitPadding = Math.max(1, fontSize * 0.08);
 
-  return textHeight <= bounds.labelHeight && widestLine <= bounds.labelWidth;
+  return (
+    textHeight <= bounds.labelHeight &&
+    lineFrames.every((line) => line.fitsRadius && line.measuredWidth <= line.maxWidth - fitPadding)
+  );
 }
 
 function measureWheelLabelText(text, fontSize) {
@@ -737,13 +858,33 @@ function setMessage(text, type) {
 
 function defaultPrizePool() {
   return [
-    { name: "Acceso al plan anual + 2.000€ en bonificaciones", image_url: "", available: null },
-    { name: "iPhone 17 Pro Max", image_url: "", available: null },
-    { name: "Lingote de oro de inversión de 5g", image_url: "", available: null },
-    { name: "Cafetera Cecotec", image_url: "", available: null },
-    { name: "Libro de formación sobre inversión (a elegir)", image_url: "", available: null },
-    { name: "Selección de acciones de alta calidad", image_url: "", available: null },
-    { name: "Gracias por participar", image_url: "", available: null }
+    {
+      name: "Acceso al plan anual + 2.000€ en bonificaciones",
+      wheel_label: "Plan anual + 2.000€",
+      image_url: "",
+      available: null
+    },
+    { name: "iPhone 17 Pro Max", wheel_label: "iPhone 17 Pro Max", image_url: "", available: null },
+    {
+      name: "Lingote de oro de inversión de 5g",
+      wheel_label: "Lingote de oro 5g",
+      image_url: "",
+      available: null
+    },
+    { name: "Cafetera Cecotec", wheel_label: "Cafetera Cecotec", image_url: "", available: null },
+    {
+      name: "Libro de formación sobre inversión (a elegir)",
+      wheel_label: "Libro de formación",
+      image_url: "",
+      available: null
+    },
+    {
+      name: "Selección de acciones de alta calidad",
+      wheel_label: "Selección de acciones",
+      image_url: "",
+      available: null
+    },
+    { name: "Gracias por participar", wheel_label: "Gracias por participar", image_url: "", available: null }
   ];
 }
 

@@ -217,16 +217,21 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(script.body, /Código verificado\. Tu giro está listo\./);
   assert.doesNotMatch(script.body, /Please enter your code\./);
   assert.match(script.body, /wheel-label-canvas/);
+  assert.match(script.body, /DEFAULT_WHEEL_LABELS/);
+  assert.match(script.body, /normalizePrizeLabelName\(fullName\)/);
   assert.match(script.body, /drawWheelLabels\(prizes,\s*slice,\s*wheelLayout,\s*labelCanvas\)/);
+  assert.match(script.body, /drawWheelSegmentGuides\(context,\s*prizes\.length,\s*slice,\s*layout\.wheelRadius\)/);
   assert.match(script.body, /clipWheelLabelSegment\(context,\s*angle,\s*slice,\s*bounds,\s*wheelRadius\)/);
   assert.match(script.body, /context\.clip\(\)/);
   assert.match(script.body, /window\.__wheelLabelDebug/);
   assert.match(script.body, /canvas\.dataset\.labelCount/);
   assert.match(script.body, /canvas\.dataset\.maxBlockRatio/);
+  assert.match(script.body, /canvas\.dataset\.maxLineOverflow/);
   assert.doesNotMatch(script.body, /--line-x/);
   assert.doesNotMatch(script.body, /--label-clip/);
   assert.match(script.body, /getWheelLayout/);
   assert.match(script.body, /wheel\.clientWidth \|\| wheelRect\.width/);
+  assert.match(script.body, /getWheelPrizeLabel\(prize\)/);
   assert.match(script.body, /getWheelLabelMetrics/);
   assert.match(script.body, /getWheelImageMetrics/);
   assert.match(script.body, /wheel-prize-image/);
@@ -278,20 +283,25 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(styles.body, /\.vision-copy\s*{[^}]*line-height:\s*1\.72/s);
   assert.doesNotMatch(styles.body, /\.wheel-label\s*{/);
   assert.doesNotMatch(styles.body, /\.vision-heading span\s*{/);
-  assert.match(script.body, /const labelMetrics = getWheelLabelMetrics\(prize\.name/);
+  assert.match(script.body, /const labelText = getWheelPrizeLabel\(prize\)/);
+  assert.match(script.body, /const labelMetrics = getWheelLabelMetrics\(labelText/);
   assert.match(script.body, /const lines = getAdaptiveWheelLabelLines\(name,\s*bounds,\s*prizeCount\)/);
   assert.match(script.body, /getAdaptiveWheelLabelFontSize\(lines,\s*bounds\)/);
-  assert.match(script.body, /fillText\(line,\s*0,\s*lineY,\s*bounds\.labelWidth\)/);
-  assert.match(script.body, /strokeText\(line,\s*0,\s*lineY,\s*bounds\.labelWidth\)/);
+  assert.match(script.body, /getWheelLabelLineFrames\(lines,\s*bounds,\s*fontSize\)/);
+  assert.match(script.body, /getWheelLabelTangentWidth\(line\.radius,\s*bounds,\s*fontSize/);
+  assert.match(script.body, /line\.maxWidth/);
+  assert.match(script.body, /fillText\(line\.text,\s*0,\s*line\.y,\s*line\.maxWidth\)/);
+  assert.match(script.body, /strokeText\(line\.text,\s*0,\s*line\.y,\s*line\.maxWidth\)/);
   assert.match(script.body, /measureWheelLabelText\(line,\s*fontSize\)/);
   assert.match(script.body, /textRotation:\s*getRadialWheelLabelRotation\(angle\)/);
   assert.match(script.body, /baseRotation\s*=\s*angle - 90/);
   assert.match(script.body, /labelHeight\s*=\s*Math\.max/);
   assert.match(script.body, /labelWidth\s*=\s*Math\.max/);
-  assert.match(script.body, /innerRadiusScale\s*=\s*crowded \? 0\.42 : dense \? 0\.4 : 0\.36/);
-  assert.match(script.body, /paddingDegrees\s*=\s*crowded \? 8 : dense \? 7\.5 : 5/);
+  assert.match(script.body, /innerRadiusScale\s*=\s*crowded \? 0\.48 : dense \? 0\.46 : 0\.38/);
+  assert.match(script.body, /paddingDegrees\s*=\s*crowded \? 9 : dense \? 8\.5 : 5\.5/);
   assert.match(script.body, /maxFontSize:\s*getWheelLabelMaxFontSize\(prizeCount,\s*wheelRadius\)/);
   assert.match(script.body, /splitWheelLabelToken\(token\)/);
+  assert.doesNotMatch(script.body, /fillText\(line,\s*0,\s*lineY,\s*bounds\.labelWidth\)/);
   assert.doesNotMatch(script.body, /document\.createElement\(\"span\"\);\s*\n\s*name\.className = \"wheel-label-text\"/);
 
   const fallbackPrizeNames = [
@@ -306,6 +316,19 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   const defaultPrizePoolSource = script.body.slice(script.body.indexOf("function defaultPrizePool"));
   assert.equal(
     fallbackPrizeNames.filter((name) => defaultPrizePoolSource.includes(`name: "${name}"`)).length,
+    7
+  );
+  const fallbackWheelLabels = [
+    "Plan anual + 2.000€",
+    "iPhone 17 Pro Max",
+    "Lingote de oro 5g",
+    "Cafetera Cecotec",
+    "Libro de formación",
+    "Selección de acciones",
+    "Gracias por participar"
+  ];
+  assert.equal(
+    fallbackWheelLabels.filter((label) => defaultPrizePoolSource.includes(`wheel_label: "${label}"`)).length,
     7
   );
 

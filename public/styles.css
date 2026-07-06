@@ -568,7 +568,8 @@ button.danger:hover {
 
 .wheel-label {
   align-items: center;
-  color: #fff;
+  -webkit-text-stroke: 0.35px rgba(74, 18, 6, 0.86);
+  color: #fff7d6;
   display: flex;
   font-size: var(--label-font-size, 15px);
   font-weight: 900;
@@ -576,9 +577,14 @@ button.danger:hover {
   justify-content: flex-start;
   left: 50%;
   line-height: 1.02;
+  overflow: hidden;
+  paint-order: stroke fill;
   position: absolute;
   text-align: left;
-  text-shadow: 0 1px 2px rgba(1, 7, 18, 0.34), 0 2px 7px rgba(1, 7, 18, 0.28);
+  text-shadow:
+    0 1px 1px rgba(74, 18, 6, 0.9),
+    0 2px 5px rgba(74, 18, 6, 0.58),
+    0 0 8px rgba(255, 235, 173, 0.32);
   top: calc(50% - var(--label-track-height, 24px) / 2);
   transform: rotate(var(--label-rotation)) translateX(var(--label-track-offset));
   transform-origin: 0 50%;

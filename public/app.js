@@ -363,43 +363,55 @@ function getWheelLabelLines(name, prizeCount) {
     return [label];
   }
 
-  const maxLines = prizeCount >= 7 ? (label.length > 48 ? 4 : 3) : 2;
+  const maxLines = prizeCount >= 7 ? (label.length > 42 ? 5 : 4) : 2;
 
   return balanceLabelLines(words, maxLines);
 }
 
 function balanceLabelLines(words, maxLines) {
   const lineCount = Math.min(maxLines, words.length);
-  const lines = Array.from({ length: lineCount }, () => []);
-  const targetLength = Math.ceil(words.join(" ").length / lineCount);
-  let lineIndex = 0;
+  const lines = [];
+  let startIndex = 0;
 
-  for (const word of words) {
-    const line = lines[lineIndex];
-    const nextLength = [...line, word].join(" ").length;
-    const canMoveForward = lineIndex < lineCount - 1 && line.length > 0 && nextLength > targetLength;
-
-    if (canMoveForward) {
-      lineIndex += 1;
+  for (let lineIndex = 0; lineIndex < lineCount; lineIndex += 1) {
+    const remainingLines = lineCount - lineIndex;
+    if (remainingLines === 1) {
+      lines.push(words.slice(startIndex).join(" "));
+      break;
     }
 
-    lines[lineIndex].push(word);
+    const remainingText = words.slice(startIndex).join(" ");
+    const targetLength = Math.ceil(remainingText.length / remainingLines);
+    let endIndex = startIndex + 1;
+    const latestEndIndex = words.length - (remainingLines - 1);
+
+    while (endIndex < latestEndIndex) {
+      const currentLine = words.slice(startIndex, endIndex).join(" ");
+      const nextLine = words.slice(startIndex, endIndex + 1).join(" ");
+      if (currentLine && nextLine.length > targetLength) {
+        break;
+      }
+      endIndex += 1;
+    }
+
+    lines.push(words.slice(startIndex, endIndex).join(" "));
+    startIndex = endIndex;
   }
 
-  return lines.map((line) => line.join(" ")).filter(Boolean);
+  return lines.filter(Boolean);
 }
 
 function getWheelLabelMetrics(lines, prizeCount, angle, layout) {
   const wheelRadius = layout.wheelRadius;
   const crowded = prizeCount >= 9;
   const dense = prizeCount >= 7;
-  const centerClearance = Math.max(wheelRadius * (crowded ? 0.24 : dense ? 0.23 : 0.22), 42);
-  const innerGap = crowded ? 8 : dense ? 10 : 14;
-  const outerGap = crowded ? 16 : dense ? 20 : 26;
+  const centerClearance = Math.max(wheelRadius * (crowded ? 0.34 : dense ? 0.34 : 0.22), dense ? 54 : 42);
+  const innerGap = crowded ? 7 : dense ? 8 : 14;
+  const outerGap = crowded ? 14 : dense ? 16 : 26;
   const trackOffset = Math.round(centerClearance + innerGap);
-  const trackWidth = Math.round(Math.max(72, wheelRadius - outerGap - trackOffset));
+  const trackWidth = Math.round(Math.max(dense ? 58 : 72, wheelRadius - outerGap - trackOffset));
   const fontSize = getWheelLabelFontSize(lines, prizeCount, trackWidth);
-  const trackHeight = Math.round(lines.length * fontSize * 1.1 + Math.max(0, lines.length - 1) * 2);
+  const trackHeight = Math.round(lines.length * fontSize * 1.03 + Math.max(0, lines.length - 1));
   const normalizedAngle = normalizeDegrees(angle);
   const isFlipped = normalizedAngle > 90 && normalizedAngle < 270;
 
@@ -418,15 +430,15 @@ function getWheelLabelMetrics(lines, prizeCount, angle, layout) {
 function getWheelLabelFontSize(lines, prizeCount, trackWidth) {
   const length = lines.join("").length;
   const longestLine = Math.max(...lines.map((line) => line.length));
-  const maxByTrack = Math.floor((trackWidth - 4) / Math.max(1, longestLine * 0.62));
-  const minimumSize = prizeCount >= 9 ? 10 : 12;
-  const maximumSize = prizeCount >= 9 ? 15 : prizeCount >= 7 ? 16 : 18;
+  const maxByTrack = Math.floor((trackWidth - 4) / Math.max(1, longestLine * 0.56));
+  const minimumSize = prizeCount >= 9 ? 8 : prizeCount >= 7 ? 8.5 : 12;
+  const maximumSize = prizeCount >= 9 ? 13 : prizeCount >= 7 ? 14 : 18;
   let preferredSize = maximumSize;
 
   if (prizeCount >= 9) {
-    preferredSize = length > 14 ? 12 : 14;
+    preferredSize = length > 28 ? 9 : 12;
   } else if (prizeCount >= 7) {
-    preferredSize = length > 16 ? 13 : 15;
+    preferredSize = length > 34 ? 9.5 : 12;
   } else {
     preferredSize = length > 18 ? 14 : 17;
   }
@@ -504,13 +516,13 @@ function setMessage(text, type) {
 
 function defaultPrizePool() {
   return [
-    { name: "Acceso al Plan Anual de Crecimiento del equipo del profesor.", image_url: "", available: null },
-    { name: "Bono de Trading de 2.000 €", image_url: "", available: null },
-    { name: "Un Apple iPhone 17 Pro Max", image_url: "", available: null },
-    { name: "Un lingote de oro de inversión de 5 gramos", image_url: "", available: null },
-    { name: "Una cafetera de alta calidad", image_url: "", available: null },
-    { name: "Tarjeta regalo de El Corte Inglés", image_url: "", available: null },
-    { name: "Acceso a una selección de acciones de alta calidad para estudio e investigación", image_url: "", available: null }
+    { name: "Acceso al plan anual + 2.000€ en bonificaciones", image_url: "", available: null },
+    { name: "iPhone 17 Pro Max", image_url: "", available: null },
+    { name: "Lingote de oro de inversión de 5g", image_url: "", available: null },
+    { name: "Cafetera Cecotec", image_url: "", available: null },
+    { name: "Libro de formación sobre inversión (a elegir)", image_url: "", available: null },
+    { name: "Selección de acciones de alta calidad", image_url: "", available: null },
+    { name: "Gracias por participar", image_url: "", available: null }
   ];
 }
 

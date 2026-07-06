@@ -373,13 +373,13 @@ function setState(element, text, type) {
 
 function defaultPrizes() {
   return [
-    { name: "Acceso al Plan Anual de Crecimiento del equipo del profesor.", probability: 10, stock: "", image_url: "" },
-    { name: "Bono de Trading de 2.000 €", probability: 10, stock: "", image_url: "" },
-    { name: "Un Apple iPhone 17 Pro Max", probability: 10, stock: "", image_url: "" },
-    { name: "Un lingote de oro de inversión de 5 gramos", probability: 10, stock: "", image_url: "" },
-    { name: "Una cafetera de alta calidad", probability: 10, stock: "", image_url: "" },
-    { name: "Tarjeta regalo de El Corte Inglés", probability: 10, stock: "", image_url: "" },
-    { name: "Acceso a una selección de acciones de alta calidad para estudio e investigación", probability: 10, stock: "", image_url: "" }
+    { name: "Acceso al plan anual + 2.000€ en bonificaciones", probability: 10, stock: "", image_url: "" },
+    { name: "iPhone 17 Pro Max", probability: 10, stock: "", image_url: "" },
+    { name: "Lingote de oro de inversión de 5g", probability: 10, stock: "", image_url: "" },
+    { name: "Cafetera Cecotec", probability: 10, stock: "", image_url: "" },
+    { name: "Libro de formación sobre inversión (a elegir)", probability: 10, stock: "", image_url: "" },
+    { name: "Selección de acciones de alta calidad", probability: 10, stock: "", image_url: "" },
+    { name: "Gracias por participar", probability: 10, stock: "", image_url: "" }
   ];
 }
 

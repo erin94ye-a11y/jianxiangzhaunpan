@@ -200,16 +200,20 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(styles.body, /\.vision-panel\s*{[^}]*grid-column:\s*1\s*\/\s*-1/s);
   assert.match(styles.body, /\.vision-panel h2\s*{[^}]*font-size:\s*clamp\(26px,\s*7vw,\s*42px\)/s);
   assert.match(styles.body, /\.vision-copy\s*{[^}]*line-height:\s*1\.72/s);
+  assert.match(styles.body, /\.wheel-label\s*{[^}]*color:\s*#fff7d6/s);
+  assert.match(styles.body, /\.wheel-label\s*{[^}]*-webkit-text-stroke:\s*0\.35px/s);
   assert.doesNotMatch(styles.body, /\.vision-heading span\s*{/);
+  assert.match(script.body, /label\.length > 42 \? 5 : 4/);
+  assert.match(script.body, /wheelRadius \* \(crowded \? 0\.34 : dense \? 0\.34 : 0\.22\)/);
 
   const fallbackPrizeNames = [
-    "Acceso al Plan Anual de Crecimiento del equipo del profesor.",
-    "Bono de Trading de 2.000 €",
-    "Un Apple iPhone 17 Pro Max",
-    "Un lingote de oro de inversión de 5 gramos",
-    "Una cafetera de alta calidad",
-    "Tarjeta regalo de El Corte Inglés",
-    "Acceso a una selección de acciones de alta calidad para estudio e investigación"
+    "Acceso al plan anual + 2.000€ en bonificaciones",
+    "iPhone 17 Pro Max",
+    "Lingote de oro de inversión de 5g",
+    "Cafetera Cecotec",
+    "Libro de formación sobre inversión (a elegir)",
+    "Selección de acciones de alta calidad",
+    "Gracias por participar"
   ];
   const defaultPrizePoolSource = script.body.slice(script.body.indexOf("function defaultPrizePool"));
   assert.equal(
@@ -347,13 +351,13 @@ test("admin default prize examples use requested Spanish rewards with blank stoc
   );
   assert.deepEqual(
     [
-      "Acceso al Plan Anual de Crecimiento del equipo del profesor.",
-      "Bono de Trading de 2.000 €",
-      "Un Apple iPhone 17 Pro Max",
-      "Un lingote de oro de inversión de 5 gramos",
-      "Una cafetera de alta calidad",
-      "Tarjeta regalo de El Corte Inglés",
-      "Acceso a una selección de acciones de alta calidad para estudio e investigación"
+      "Acceso al plan anual + 2.000€ en bonificaciones",
+      "iPhone 17 Pro Max",
+      "Lingote de oro de inversión de 5g",
+      "Cafetera Cecotec",
+      "Libro de formación sobre inversión (a elegir)",
+      "Selección de acciones de alta calidad",
+      "Gracias por participar"
     ].map((name) => defaultPrizeBlock.includes(`name: "${name}"`)),
     Array(7).fill(true)
   );

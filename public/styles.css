@@ -1259,6 +1259,33 @@ body.public-page {
   overflow: auto;
 }
 
+.pagination {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 16px;
+}
+
+.pagination span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  min-width: 92px;
+  text-align: center;
+}
+
+.pagination button {
+  min-height: 36px;
+}
+
+.empty-table-message {
+  color: var(--muted);
+  font-weight: 800;
+  text-align: center;
+}
+
 table {
   border-collapse: collapse;
   min-width: 920px;

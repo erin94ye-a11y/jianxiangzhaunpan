@@ -23,14 +23,21 @@ const resetPrizeButton = document.querySelector("#resetPrizeButton");
 const visitLogRows = document.querySelector("#visitLogRows");
 const visitCount = document.querySelector("#visitCount");
 const exportVisitsButton = document.querySelector("#exportVisitsButton");
+const visitPagination = document.querySelector("#visitPagination");
+const visitPrevPageButton = document.querySelector("#visitPrevPageButton");
+const visitPageInfo = document.querySelector("#visitPageInfo");
+const visitNextPageButton = document.querySelector("#visitNextPageButton");
 
 const ADMIN_SYNC_INTERVAL_MS = 5000;
+const VISIT_PAGE_SIZE = 10;
 
 let campaigns = [];
 let prizesLoaded = false;
 let adminSyncTimer = null;
 let prizeFormDirty = false;
 let latestPrizeSignature = "";
+let visitRecords = [];
+let visitPage = 1;
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -63,6 +70,23 @@ logoutButton.addEventListener("click", async () => {
 refreshButton.addEventListener("click", () => refreshAll({ forcePrizes: true }));
 exportVisitsButton.addEventListener("click", () => {
   window.location.href = "/api/admin/visits/export";
+});
+visitPrevPageButton.addEventListener("click", () => {
+  if (visitPage <= 1) {
+    return;
+  }
+
+  visitPage -= 1;
+  renderVisitPage();
+});
+visitNextPageButton.addEventListener("click", () => {
+  const totalPages = getVisitTotalPages();
+  if (visitPage >= totalPages) {
+    return;
+  }
+
+  visitPage += 1;
+  renderVisitPage();
 });
 
 codeGeneratorForm.addEventListener("submit", async (event) => {
@@ -326,22 +350,43 @@ function prizeListSignature(prizes) {
 }
 
 function renderVisits(visits) {
-  visitCount.textContent = `${visits.length} 条`;
-  visitLogRows.innerHTML = visits
-    .map(
-      (visit) => `
-        <tr>
-          <td>${escapeHtml(formatTime(visit.created_at))}</td>
-          <td>${escapeHtml(visit.code || "")}</td>
-          <td>${escapeHtml(visit.ip_address || "")}</td>
-          <td>${escapeHtml(visit.device_model || "")}</td>
-          <td>${escapeHtml(visit.device_type || "")}</td>
-          <td>${escapeHtml(visit.system || "")}</td>
-          <td>${escapeHtml(visit.language || "")}</td>
-        </tr>
-      `
-    )
-    .join("");
+  visitRecords = Array.isArray(visits) ? visits : [];
+  visitPage = Math.min(visitPage, getVisitTotalPages());
+  renderVisitPage();
+}
+
+function renderVisitPage() {
+  const totalPages = getVisitTotalPages();
+  const start = (visitPage - 1) * VISIT_PAGE_SIZE;
+  const pageVisits = visitRecords.slice(start, start + VISIT_PAGE_SIZE);
+
+  visitCount.textContent = `${visitRecords.length} 条`;
+  visitLogRows.innerHTML = pageVisits.length
+    ? pageVisits
+        .map(
+          (visit) => `
+            <tr>
+              <td>${escapeHtml(formatTime(visit.created_at))}</td>
+              <td>${escapeHtml(visit.code || "")}</td>
+              <td>${escapeHtml(visit.ip_address || "")}</td>
+              <td>${escapeHtml(visit.device_model || "")}</td>
+              <td>${escapeHtml(visit.device_type || "")}</td>
+              <td>${escapeHtml(visit.system || "")}</td>
+              <td>${escapeHtml(visit.language || "")}</td>
+            </tr>
+          `
+        )
+        .join("")
+    : `<tr><td colspan="7" class="empty-table-message">暂无访问记录</td></tr>`;
+
+  visitPageInfo.textContent = visitRecords.length ? `第 ${visitPage} / ${totalPages} 页` : "暂无记录";
+  visitPrevPageButton.disabled = visitPage <= 1;
+  visitNextPageButton.disabled = visitPage >= totalPages;
+  visitPagination.classList.toggle("is-hidden", visitRecords.length <= VISIT_PAGE_SIZE);
+}
+
+function getVisitTotalPages() {
+  return Math.max(1, Math.ceil(visitRecords.length / VISIT_PAGE_SIZE));
 }
 
 async function api(url, options = {}) {

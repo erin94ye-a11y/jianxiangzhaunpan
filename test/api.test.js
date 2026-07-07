@@ -220,9 +220,9 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(script.body, /DEFAULT_WHEEL_LABELS/);
   assert.match(script.body, /normalizePrizeLabelName\(fullName\)/);
   assert.match(script.body, /drawWheelLabels\(prizes,\s*slice,\s*wheelLayout,\s*labelCanvas\)/);
-  assert.match(script.body, /drawWheelSegmentGuides\(context,\s*prizes\.length,\s*slice,\s*layout\.wheelRadius\)/);
-  assert.match(script.body, /innerRadius\s*=\s*wheelRadius \* 0\.29/);
-  assert.match(script.body, /outerRadius\s*=\s*wheelRadius - context\.lineWidth \/ 2/);
+  assert.match(script.body, /drawWheelSegmentGuides\(context,\s*prizes\.length,\s*slice,\s*layout\)/);
+  assert.match(script.body, /getWheelSegmentGuideRadii\(layout,\s*context\.lineWidth\)/);
+  assert.match(script.body, /outerRadius:\s*wheelRadius \+ lineWidth/);
   assert.match(script.body, /clipWheelLabelSegment\(context,\s*angle,\s*slice,\s*bounds,\s*wheelRadius\)/);
   assert.match(script.body, /context\.clip\(\)/);
   assert.match(script.body, /window\.__wheelLabelDebug/);
@@ -290,20 +290,25 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.doesNotMatch(styles.body, /\.vision-heading span\s*{/);
   assert.match(script.body, /const labelText = getWheelPrizeLabel\(prize\)/);
   assert.match(script.body, /const labelMetrics = getWheelLabelMetrics\(labelText/);
-  assert.match(script.body, /const lines = getAdaptiveWheelLabelLines\(name,\s*bounds,\s*prizeCount\)/);
-  assert.match(script.body, /getAdaptiveWheelLabelFontSize\(lines,\s*bounds\)/);
-  assert.match(script.body, /getWheelLabelLineFrames\(lines,\s*bounds,\s*fontSize\)/);
+  assert.match(
+    script.body,
+    /const lines = getAdaptiveWheelLabelLines\(name,\s*bounds,\s*prizeCount,\s*orientation\.radialDirection\)/
+  );
+  assert.match(script.body, /getAdaptiveWheelLabelFontSize\(lines,\s*bounds,\s*orientation\.radialDirection\)/);
+  assert.match(script.body, /getWheelLabelLineFrames\(lines,\s*bounds,\s*fontSize,\s*orientation\.radialDirection\)/);
   assert.match(script.body, /getWheelLabelTangentWidth\(line\.radius,\s*bounds,\s*fontSize/);
   assert.match(script.body, /line\.maxWidth/);
   assert.match(script.body, /fillText\(line\.text,\s*0,\s*line\.y,\s*line\.maxWidth\)/);
   assert.match(script.body, /strokeText\(line\.text,\s*0,\s*line\.y,\s*line\.maxWidth\)/);
   assert.match(script.body, /measureWheelLabelText\(line,\s*fontSize\)/);
-  assert.match(script.body, /textRotation:\s*getRadialWheelLabelRotation\(angle\)/);
+  assert.match(script.body, /const orientation = getWheelLabelOrientation\(angle\)/);
+  assert.match(script.body, /radialDirection:\s*orientation\.radialDirection/);
+  assert.match(script.body, /textRotation:\s*orientation\.textRotation/);
   assert.match(script.body, /baseRotation\s*=\s*angle - 90/);
   assert.match(script.body, /labelHeight\s*=\s*Math\.max/);
   assert.match(script.body, /labelWidth\s*=\s*Math\.max/);
-  assert.match(script.body, /innerRadiusScale\s*=\s*crowded \? 0\.48 : dense \? 0\.46 : 0\.38/);
-  assert.match(script.body, /paddingDegrees\s*=\s*crowded \? 9 : dense \? 8\.5 : 5\.5/);
+  assert.match(script.body, /innerRadiusScale\s*=\s*crowded \? 0\.43 : dense \? 0\.4 : 0\.36/);
+  assert.match(script.body, /paddingDegrees\s*=\s*crowded \? 6\.4 : dense \? 5\.2 : 4\.2/);
   assert.match(script.body, /maxFontSize:\s*getWheelLabelMaxFontSize\(prizeCount,\s*wheelRadius\)/);
   assert.match(script.body, /splitWheelLabelToken\(token\)/);
   assert.doesNotMatch(script.body, /fillText\(line,\s*0,\s*lineY,\s*bounds\.labelWidth\)/);

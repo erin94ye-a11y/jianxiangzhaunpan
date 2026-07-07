@@ -150,15 +150,15 @@ test("site pages expose the favicon in public and admin modes", async (t) => {
   });
   assert.equal(publicPage.status, 200);
   assert.match(publicPage.body, /<title>STIFEL<\/title>/);
-  assert.match(publicPage.body, /<link rel="icon" type="image\/png" href="\/favicon\.png" \/>/);
-  assert.match(publicPage.body, /<link rel="apple-touch-icon" href="\/apple-touch-icon\.png" \/>/);
+  assert.match(publicPage.body, /<link rel="icon" type="image\/png" href="\/favicon\.png\?v=stifel-s" \/>/);
+  assert.match(publicPage.body, /<link rel="apple-touch-icon" href="\/apple-touch-icon\.png\?v=stifel-s" \/>/);
 
   const adminPage = await adminServer.request("/", {
     headers: { accept: "text/html" }
   });
   assert.equal(adminPage.status, 200);
-  assert.match(adminPage.body, /<link rel="icon" type="image\/png" href="\/favicon\.png" \/>/);
-  assert.match(adminPage.body, /<link rel="apple-touch-icon" href="\/apple-touch-icon\.png" \/>/);
+  assert.match(adminPage.body, /<link rel="icon" type="image\/png" href="\/favicon\.png\?v=stifel-s" \/>/);
+  assert.match(adminPage.body, /<link rel="apple-touch-icon" href="\/apple-touch-icon\.png\?v=stifel-s" \/>/);
 
   const publicIcon = await publicServer.request("/favicon.png");
   assert.equal(publicIcon.status, 200);

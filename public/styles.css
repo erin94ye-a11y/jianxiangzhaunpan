@@ -523,6 +523,7 @@ button.danger:hover {
   top: 50%;
   transform: translate(-50%, -50%);
   width: 72px;
+  z-index: 3;
 }
 
 .wheel-pointer {
@@ -566,6 +567,7 @@ button.danger:hover {
   border-width: 2px;
 }
 
+.wheel-bg-canvas,
 .wheel-label-canvas {
   display: block;
   height: 100%;
@@ -573,6 +575,13 @@ button.danger:hover {
   pointer-events: none;
   position: absolute;
   width: 100%;
+}
+
+.wheel-bg-canvas {
+  z-index: 0;
+}
+
+.wheel-label-canvas {
   z-index: 2;
 }
 

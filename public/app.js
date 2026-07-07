@@ -11,15 +11,15 @@ const resultImage = document.querySelector("#resultImage");
 const resultName = document.querySelector("#resultName");
 
 const segmentColors = [
-  "#e11d48",
-  "#f97316",
-  "#f59e0b",
-  "#ef4444",
-  "#fb7185",
-  "#facc15",
-  "#ea580c",
-  "#f43f5e",
-  "#d97706"
+  "#d94b1f",
+  "#f28c1b",
+  "#d8a215",
+  "#c83a2e",
+  "#e06350",
+  "#c7792c",
+  "#b8322a",
+  "#e6a23c",
+  "#9f2f1f"
 ];
 
 const VISITOR_TOKEN_STORAGE_KEY = "jump_quantum_visitor_token";
@@ -298,19 +298,17 @@ function renderWheel(prizes) {
   const slice = 360 / prizes.length;
   const dense = prizes.length >= 7;
   const crowded = prizes.length >= 9;
-  const gradient = prizes
-    .map((_, index) => {
-      const color = segmentColors[index % segmentColors.length];
-      return `${color} ${index * slice}deg ${(index + 1) * slice}deg`;
-    })
-    .join(", ");
 
-  wheel.style.background = `conic-gradient(from -90deg, ${gradient})`;
+  wheel.style.background = "#5a170c";
   wheel.classList.toggle("is-dense", dense);
   wheel.classList.toggle("is-crowded", crowded);
   wheel.innerHTML = "";
 
   const wheelLayout = getWheelLayout();
+  const backgroundCanvas = document.createElement("canvas");
+  backgroundCanvas.className = "wheel-bg-canvas";
+  wheel.append(backgroundCanvas);
+
   const labelCanvas = document.createElement("canvas");
   labelCanvas.className = "wheel-label-canvas";
   wheel.append(labelCanvas);
@@ -336,6 +334,7 @@ function renderWheel(prizes) {
     }
   });
 
+  drawWheelBackground(prizes.length, slice, wheelLayout, backgroundCanvas);
   drawWheelLabels(prizes, slice, wheelLayout, labelCanvas);
 }
 
@@ -357,10 +356,10 @@ const WHEEL_LABEL_FONT_FAMILY =
   "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif";
 let wheelLabelMeasureContext = null;
 
-function drawWheelLabels(prizes, slice, layout, canvas) {
+function configureWheelCanvas(canvas, layout) {
   const context = canvas.getContext("2d");
   if (!context) {
-    return;
+    return null;
   }
 
   const wheelSize = Math.round(layout.wheelSize);
@@ -369,7 +368,46 @@ function drawWheelLabels(prizes, slice, layout, canvas) {
   canvas.height = Math.round(wheelSize * pixelRatio);
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   context.clearRect(0, 0, wheelSize, wheelSize);
-  drawWheelSegmentGuides(context, prizes.length, slice, layout);
+
+  return context;
+}
+
+function drawWheelBackground(prizeCount, slice, layout, canvas) {
+  const context = configureWheelCanvas(canvas, layout);
+  if (!context) {
+    return;
+  }
+
+  const wheelRadius = layout.wheelRadius;
+  context.save();
+  context.translate(wheelRadius, wheelRadius);
+
+  for (let index = 0; index < prizeCount; index += 1) {
+    const start = -90 + index * slice;
+    const end = start + slice;
+    const segmentColor = segmentColors[index % segmentColors.length];
+    const segmentGradient = context.createRadialGradient(0, 0, wheelRadius * 0.12, 0, 0, wheelRadius);
+    segmentGradient.addColorStop(0, lightenColor(segmentColor, 0.18));
+    segmentGradient.addColorStop(0.64, segmentColor);
+    segmentGradient.addColorStop(1, darkenColor(segmentColor, 0.14));
+
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.arc(0, 0, wheelRadius + 1, (start * Math.PI) / 180, (end * Math.PI) / 180);
+    context.closePath();
+    context.fillStyle = segmentGradient;
+    context.fill();
+  }
+
+  context.restore();
+  drawWheelSegmentGuides(context, prizeCount, slice, layout);
+}
+
+function drawWheelLabels(prizes, slice, layout, canvas) {
+  const context = configureWheelCanvas(canvas, layout);
+  if (!context) {
+    return;
+  }
 
   const debugLabels = [];
   prizes.forEach((prize, index) => {
@@ -408,8 +446,8 @@ function drawWheelSegmentGuides(context, prizeCount, slice, layout) {
   const wheelRadius = layout.wheelRadius;
   context.save();
   context.translate(wheelRadius, wheelRadius);
-  context.strokeStyle = "rgba(255, 247, 214, 0.7)";
-  context.lineWidth = Math.max(1.8, wheelRadius * 0.013);
+  context.strokeStyle = "rgba(255, 238, 196, 0.82)";
+  context.lineWidth = Math.max(2, wheelRadius * 0.014);
   context.lineCap = "butt";
   const { innerRadius, outerRadius } = getWheelSegmentGuideRadii(layout, context.lineWidth);
 
@@ -424,6 +462,39 @@ function drawWheelSegmentGuides(context, prizeCount, slice, layout) {
   }
 
   context.restore();
+}
+
+function parseHexColor(value) {
+  const normalized = String(value || "").replace("#", "").trim();
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) {
+    return [0, 0, 0];
+  }
+
+  return [
+    Number.parseInt(normalized.slice(0, 2), 16),
+    Number.parseInt(normalized.slice(2, 4), 16),
+    Number.parseInt(normalized.slice(4, 6), 16)
+  ];
+}
+
+function formatHexColor(red, green, blue) {
+  return `#${[red, green, blue]
+    .map((channel) => clamp(Math.round(channel), 0, 255).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+function lightenColor(value, amount) {
+  const [red, green, blue] = parseHexColor(value);
+  return formatHexColor(
+    red + (255 - red) * amount,
+    green + (255 - green) * amount,
+    blue + (255 - blue) * amount
+  );
+}
+
+function darkenColor(value, amount) {
+  const [red, green, blue] = parseHexColor(value);
+  return formatHexColor(red * (1 - amount), green * (1 - amount), blue * (1 - amount));
 }
 
 function getWheelSegmentGuideRadii(layout, lineWidth = 0) {

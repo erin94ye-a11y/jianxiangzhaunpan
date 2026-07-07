@@ -216,13 +216,19 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(script.body, /Ingresa tu código\./);
   assert.match(script.body, /Código verificado\. Tu giro está listo\./);
   assert.doesNotMatch(script.body, /Please enter your code\./);
+  assert.match(script.body, /wheel-bg-canvas/);
   assert.match(script.body, /wheel-label-canvas/);
   assert.match(script.body, /DEFAULT_WHEEL_LABELS/);
   assert.match(script.body, /normalizePrizeLabelName\(fullName\)/);
+  assert.match(script.body, /drawWheelBackground\(prizes\.length,\s*slice,\s*wheelLayout,\s*backgroundCanvas\)/);
   assert.match(script.body, /drawWheelLabels\(prizes,\s*slice,\s*wheelLayout,\s*labelCanvas\)/);
-  assert.match(script.body, /drawWheelSegmentGuides\(context,\s*prizes\.length,\s*slice,\s*layout\)/);
+  assert.match(script.body, /configureWheelCanvas\(canvas,\s*layout\)/);
+  assert.match(script.body, /drawWheelSegmentGuides\(context,\s*prizeCount,\s*slice,\s*layout\)/);
+  assert.match(script.body, /context\.createRadialGradient\(0,\s*0,\s*wheelRadius \* 0\.12,\s*0,\s*0,\s*wheelRadius\)/);
+  assert.match(script.body, /segmentGradient\.addColorStop\(0\.64,\s*segmentColor\)/);
   assert.match(script.body, /getWheelSegmentGuideRadii\(layout,\s*context\.lineWidth\)/);
   assert.match(script.body, /outerRadius:\s*wheelRadius \+ lineWidth/);
+  assert.doesNotMatch(script.body, /conic-gradient/);
   assert.match(script.body, /clipWheelLabelSegment\(context,\s*angle,\s*slice,\s*bounds,\s*wheelRadius\)/);
   assert.match(script.body, /context\.clip\(\)/);
   assert.match(script.body, /window\.__wheelLabelDebug/);
@@ -254,8 +260,9 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
     headers: { accept: "text/css" }
   });
   assert.equal(styles.status, 200);
-  assert.match(styles.body, /\.wheel-label-canvas\s*{[^}]*position:\s*absolute/s);
-  assert.match(styles.body, /\.wheel-label-canvas\s*{[^}]*pointer-events:\s*none/s);
+  assert.match(styles.body, /\.wheel-bg-canvas,\s*\.wheel-label-canvas\s*{[^}]*position:\s*absolute/s);
+  assert.match(styles.body, /\.wheel-bg-canvas,\s*\.wheel-label-canvas\s*{[^}]*pointer-events:\s*none/s);
+  assert.match(styles.body, /\.wheel-bg-canvas\s*{[^}]*z-index:\s*0/s);
   assert.match(styles.body, /\.wheel-label-canvas\s*{[^}]*z-index:\s*2/s);
   assert.doesNotMatch(styles.body, /\.wheel-label-line/);
   assert.doesNotMatch(styles.body, /clip-path:\s*var\(--label-clip\)/);

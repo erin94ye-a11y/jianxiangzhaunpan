@@ -816,14 +816,29 @@ body.public-page {
 }
 
 .public-page .process-strip div {
+  align-content: center;
   background: rgba(61, 20, 11, 0.76);
   border-color: rgba(255, 190, 122, 0.28);
   color: #ffe8d2;
+  display: grid;
+  gap: 7px;
+  justify-items: center;
+  text-align: center;
 }
 
 .public-page .process-strip span {
   background: #ffb000;
   color: #351007;
+}
+
+.public-page .process-strip strong {
+  color: #fff8ef;
+  display: block;
+  font-size: clamp(12px, 2.8vw, 14px);
+  line-height: 1.16;
+  max-width: 100%;
+  text-align: center;
+  width: 100%;
 }
 
 .public-page .wheel-stage {

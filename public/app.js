@@ -23,6 +23,7 @@ const segmentColors = [
 ];
 
 const VISITOR_TOKEN_STORAGE_KEY = "jump_quantum_visitor_token";
+const SPIN_BUTTON_LABEL = "GO";
 const DEFAULT_WHEEL_LABELS = new Map(
   [
     ["Acceso al plan anual + 2.000€ en bonificaciones", "Plan anual + 2.000€"],
@@ -276,7 +277,7 @@ function renderStaticPrizePool(prizes) {
   welcomeStage.classList.add("is-hidden");
   wheelStage.classList.remove("is-hidden");
   spinButton.disabled = true;
-  spinButton.textContent = "Ingresa código";
+  spinButton.textContent = SPIN_BUTTON_LABEL;
   renderWheel(prizes);
 }
 
@@ -287,7 +288,7 @@ function renderCampaign(campaign) {
   welcomeStage.classList.add("is-hidden");
   wheelStage.classList.remove("is-hidden");
   spinButton.disabled = remaining <= 0;
-  spinButton.textContent = remaining <= 0 ? "Ya usado" : "Girar ahora";
+  spinButton.textContent = SPIN_BUTTON_LABEL;
   isSpinning = false;
 
   const prizes = campaign.prizes.length ? campaign.prizes : [{ name: "Aún no hay premios" }];

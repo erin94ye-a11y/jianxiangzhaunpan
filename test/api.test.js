@@ -196,6 +196,10 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.doesNotMatch(page.body, /jump-quantum-banner\.png/);
   assert.match(page.body, /EVENTO DE RECOMPENSAS/);
   assert.match(page.body, /<p class="event-title" aria-label="EVENTO DE RECOMPENSAS">EVENTO DE RECOMPENSAS<\/p>/);
+  assert.match(
+    page.body,
+    /<button class="spin-button" id="spinButton" type="button" disabled aria-label="GO">GO<\/button>/
+  );
   assert.doesNotMatch(page.body, /brand-jump/);
   assert.doesNotMatch(page.body, /brand-quantum/);
   assert.doesNotMatch(page.body, /brand-name/);
@@ -215,6 +219,10 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.doesNotMatch(script.body, /[\u3400-\u9fff]/);
   assert.match(script.body, /Ingresa tu código\./);
   assert.match(script.body, /Código verificado\. Tu giro está listo\./);
+  assert.match(script.body, /const SPIN_BUTTON_LABEL = "GO"/);
+  assert.match(script.body, /spinButton\.textContent = SPIN_BUTTON_LABEL/);
+  assert.doesNotMatch(script.body, /spinButton\.textContent = "Ingresa c/);
+  assert.doesNotMatch(script.body, /spinButton\.textContent = remaining <= 0 \? "Ya usado" : "Girar ahora"/);
   assert.doesNotMatch(script.body, /Please enter your code\./);
   assert.match(script.body, /wheel-bg-canvas/);
   assert.match(script.body, /wheel-label-canvas/);
@@ -264,6 +272,11 @@ test("public H5 page defaults to Spanish and ships seven requested fallback priz
   assert.match(styles.body, /\.wheel-bg-canvas,\s*\.wheel-label-canvas\s*{[^}]*pointer-events:\s*none/s);
   assert.match(styles.body, /\.wheel-bg-canvas\s*{[^}]*z-index:\s*0/s);
   assert.match(styles.body, /\.wheel-label-canvas\s*{[^}]*z-index:\s*2/s);
+  assert.match(styles.body, /\.spin-button\s*{[^}]*font-size:\s*clamp\(24px,\s*7vw,\s*34px\)/s);
+  assert.match(styles.body, /\.spin-button\s*{[^}]*line-height:\s*1/s);
+  assert.match(styles.body, /\.spin-button\s*{[^}]*white-space:\s*nowrap/s);
+  assert.match(styles.body, /\.public-page \.spin-button\s*{[^}]*font-size:\s*clamp\(26px,\s*8vw,\s*34px\)/s);
+  assert.match(styles.body, /\.public-page \.spin-button:disabled\s*{[^}]*color:\s*#fff7ea/s);
   assert.doesNotMatch(styles.body, /\.wheel-label-line/);
   assert.doesNotMatch(styles.body, /clip-path:\s*var\(--label-clip\)/);
   assert.match(styles.body, /\.wheel-prize-image\s*{[^}]*height:\s*var\(--wheel-image-size\)/s);
